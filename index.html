@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد پروژه - نمایش مستندات</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
+        type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3f51b5;
+            --secondary-color: #f50057;
+            --background-light: #f5f7ff;
+            --text-dark: #333;
+            --border-color: #e0e0e0;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --info-color: #2196f3;
+            --fk-color: #ff9800
+        }
+
+        body {
+            font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-dark);
+            direction: rtl;
+            text-align: right
+        }
+
+        .sidebar {
+            background-color: #fff;
+            border-left: 1px solid var(--border-color);
+            height: 100vh;
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 250px;
+            z-index: 1000;
+            padding-top: 20px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, .1);
+            overflow-y: auto
+        }
+
+        .content {
+            margin-right: 250px;
+            padding: 20px
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px
+        }
+
+        .nav-link {
+            color: var(--text-dark);
+            border-radius: 0;
+            padding: 10px 20px;
+            margin-bottom: 5px;
+            text-align: right
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white
+        }
+
+        .nav-link:hover:not(.active) {
+            background-color: var(--background-light)
+        }
+
+        .section-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .05);
+            margin-bottom: 25px;
+            overflow: hidden
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600
+        }
+
+        .section-body {
+            padding: 20px
+        }
+
+        .badge-priority-high {
+            background-color: var(--secondary-color);
+            color: white
+        }
+
+        .badge-priority-medium {
+            background-color: var(--warning-color);
+            color: white
+        }
+
+        .badge-priority-low {
+            background-color: var(--success-color);
+            color: white
+        }
+
+        .entity-modal .modal-header,
+        .requirement-modal .modal-header,
+        .roadmap-modal .modal-header {
+            background-color: var(--primary-color);
+            color: white
+        }
+
+        .entity-modal .table,
+        .requirement-modal .table {
+            font-size: .9rem
+        }
+
+        .mermaid {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            overflow-x: auto
+        }
+
+        .json-input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: calc(100% - 250px);
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            padding: 15px;
+            z-index: 900;
+            display: none;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, .1)
+        }
+
+        .btn-float {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
+            z-index: 1000;
+            border: none
+        }
+
+        .tab-content {
+            padding-top: 20px
+        }
+
+        .workflow-step-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            border-right: 4px solid var(--primary-color);
+            text-align: right
+        }
+
+        .workflow-step-item.decision {
+            border-right-color: var(--warning-color)
+        }
+
+        .roadmap-container {
+            padding: 20px;
+            position: relative
+        }
+
+        .roadmap-path {
+            position: relative;
+            padding: 0 20px
+        }
+
+        .roadmap-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 50%;
+            width: 4px;
+            background-color: var(--primary-color);
+            z-index: 1
+        }
+
+        .roadmap-step {
+            position: relative;
+            z-index: 2;
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 30px;
+            margin-right: 25px;
+            cursor: pointer;
+            transition: transform .2s, box-shadow .2s;
+            text-align: right
+        }
+
+        .roadmap-step:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 25px;
+            height: 4px;
+            background-color: var(--primary-color);
+            transform: translateY(-50%)
+        }
+
+        .roadmap-step:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1)
+        }
+
+        .roadmap-step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px
+        }
+
+        .roadmap-step-title {
+            font-weight: 600;
+            margin: 0
+        }
+
+        .role-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: transform .2s, box-shadow .2s;
+            text-align: right
+        }
+
+        .role-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .1)
+        }
+
+        .role-card-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            background-color: #f8f9fa
+        }
+
+        .role-card-body {
+            padding: 15px
+        }
+
+        .requirement-item {
+            cursor: pointer;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            background-color: #e3f2fd;
+            border-right: 3px solid var(--info-color);
+            transition: background-color .2s
+        }
+
+        .requirement-item:hover {
+            background-color: #bbdefb
+        }
+
+        .requirement-modal .modal-body ul {
+            padding-right: 20px
+        }
+
+        .copy-task-btn {
+            margin-right: 10px;
+            font-size: .8rem;
+            padding: 5px 8px;
+            line-height: 1;
+            align-self: center
+        }
+
+        .list-group-item.task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .entity-card-item {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all .2s ease-in-out
+        }
+
+        .entity-card-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .08)
+        }
+
+        .entity-card-item.highlight-primary {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(63, 81, 181, .3)
+        }
+
+        .entity-card-item.highlight-related {
+            border-color: var(--info-color);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, .2)
+        }
+
+        .entity-search-container {
+            margin-bottom: 20px;
+            display: flex
+        }
+
+        .entity-search-container .form-control {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0
+        }
+
+        .entity-search-container .btn {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0
+        }
+
+        .roadmap-req-link {
+            cursor: pointer;
+            color: var(--info-color);
+            font-weight: 600;
+            text-decoration: underline
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h5 id="project-name" class="mb-1">نام پروژه</h5>
+        </div>
+        <ul class="nav flex-column" id="project-nav">
+            <li class="nav-item"><a class="nav-link active" href="#overview"><i class="fas fa-home me-2"></i> نمای
+                    کلی</a></li>
+            <li class="nav-item"><a class="nav-link" href="#entities"><i class="fas fa-database me-2"></i>
+                    موجودیت‌ها</a></li>
+            <li class="nav-item"><a class="nav-link" href="#roles"><i class="fas fa-users me-2"></i> نقش‌های کاربری</a>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="#roadmap"><i class="fas fa-road me-2"></i> نقشه راه
+                    پیاده‌سازی</a></li>
+        </ul>
+    </div>
+    <div class="content">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="overview">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-info-circle me-2"></i> اطلاعات کلی پروژه</div>
+                    <div class="section-body">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h3 id="overview-project-name" class="mb-3">نام پروژه</h3>
+                                <p id="overview-project-description" class="lead">توضیحات پروژه...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="entities">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-database me-2"></i> موجودیت‌ها</div>
+                    <div class="section-body">
+                        <div class="entity-search-container"><input type="text" id="entity-search-input"
+                                class="form-control" placeholder="جستجوی موجودیت (نام فارسی یا نام جدول)..."><button
+                                class="btn btn-outline-secondary" id="clear-entity-search" style="display:none;"><i
+                                    class="fas fa-times"></i></button></div>
+                        <div class="row" id="entity-cards-container"></div>
+                        <div class="alert alert-info mt-3 text-center">با کلیک بر روی یک موجودیت، جزئیات آن و
+                            موجودیت‌های مرتبط با آن برجسته می‌شوند.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="roles">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-users me-2"></i> نقش‌های کاربری</div>
+                    <div class="section-body">
+                        <div class="row" id="roles-container"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="roadmap">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-road me-2"></i> نقشه راه پیاده‌سازی</div>
+                    <div class="section-body">
+                        <div class="roadmap-container">
+                            <div class="roadmap-path">
+                                <div class="roadmap-line"></div>
+                                <div id="roadmap-steps"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade entity-modal" id="entityModal" tabindex="-1" aria-labelledby="entityModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="entityModalLabel">جزئیات موجودیت</h5><button type="button"
+                        class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="entityModalBody"></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade requirement-modal" id="requirementModal" tabindex="-1"
+        aria-labelledby="requirementModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="requirementModalLabel">جزئیات نیازمندی</h5><button type="button"
+                        class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="requirementModalBody"></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade roadmap-modal" id="roadmapModal" tabindex="-1" aria-labelledby="roadmapModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="roadmapModalLabel">جزئیات مرحله</h5><button type="button"
+                        class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="roadmapModalBody"></div>
+            </div>
+        </div>
+    </div><button class="btn-float" id="toggle-json-input"><i class="fas fa-code"></i></button>
+    <div class="json-input-container" id="json-input-container">
+        <div class="d-flex justify-content-between mb-2">
+            <h5>ورود JSON</h5><button type="button" class="btn-close" id="close-json-input"></button>
+        </div><textarea id="jsonInput" class="form-control mb-2" rows="10"
+            placeholder="JSON را اینجا وارد کنید..."></textarea>
+        <div class="d-flex justify-content-end"><button id="loadBtn" class="btn btn-primary">بارگذاری</button></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentProjectData = null;
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose', flowchart: { htmlLabels: true } });
+
+        let allEntitiesMap = new Map();
+        let allRequirementsMap = new Map();
+
+        // Helper function to escape strings for JavaScript literal within HTML attribute
+        function escapeJsStringLiteral(s) {
+            if (s === null || s === undefined) return '';
+            return s.toString()
+                .replace(/\\/g, '\\\\') // Escape backslashes
+                .replace(/'/g, '\\\'')  // Escape single quotes
+                .replace(/"/g, '\\"')   // Escape double quotes
+                .replace(/\n/g, '\\n')  // Escape newlines
+                .replace(/\r/g, '\\r'); // Escape carriage returns
+        }
+
+        function renderEntities(entities, baseFields) {
+            const container = document.getElementById('entity-cards-container');
+            container.innerHTML = '';
+            allEntitiesMap.clear();
+            entities.forEach(entity => {
+                allEntitiesMap.set(entity.id, entity);
+                const entityCard = document.createElement('div');
+                entityCard.className = 'col-md-3';
+                entityCard.innerHTML = `<div class="entity-card-item" data-entity-id="${entity.id}"><h6 class="mb-1">${entity.persianName}</h6><small class="text-muted">${entity.tableName}</small></div>`;
+                container.appendChild(entityCard);
+                entityCard.querySelector('.entity-card-item').addEventListener('click', function () {
+                    highlightRelatedEntities(entity.id);
+                    showEntityDetails(entity, baseFields);
+                });
+            });
+
+            const searchInput = document.getElementById('entity-search-input');
+            const clearSearchButton = document.getElementById('clear-entity-search');
+            let timeout = null;
+            searchInput.addEventListener('input', function () {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    const query = searchInput.value.toLowerCase();
+                    filterEntityCards(query, entities);
+                    if (query.length > 0) {
+                        clearSearchButton.style.display = 'inline-block';
+                    } else {
+                        clearSearchButton.style.display = 'none';
+                    }
+                }, 300)
+            });
+            clearSearchButton.addEventListener('click', function () {
+                searchInput.value = '';
+                clearSearchButton.style.display = 'none';
+                filterEntityCards('', entities);
+                clearEntityHighlights();
+            });
+        }
+
+        function filterEntityCards(query, entities) {
+            const cards = document.querySelectorAll('#entity-cards-container .entity-card-item');
+            cards.forEach(card => {
+                const entityId = card.dataset.entityId;
+                const entity = allEntitiesMap.get(entityId);
+                const match = entity.persianName.toLowerCase().includes(query) || entity.tableName.toLowerCase().includes(query);
+                card.closest('.col-md-3').style.display = match ? 'block' : 'none';
+            });
+        }
+
+        function highlightRelatedEntities(selectedEntityId) {
+            clearEntityHighlights();
+            const selectedEntity = allEntitiesMap.get(selectedEntityId);
+            if (!selectedEntity) return;
+
+            const primaryCard = document.querySelector(`.entity-card-item[data-entity-id="${selectedEntityId}"]`);
+            if (primaryCard) primaryCard.classList.add('highlight-primary');
+
+            const relatedEntityIds = new Set();
+            if (selectedEntity.foreignKeys) {
+                selectedEntity.foreignKeys.forEach(fk => {
+                    relatedEntityIds.add(fk.references);
+                });
+            }
+            allEntitiesMap.forEach(entity => {
+                if (entity.id !== selectedEntityId && entity.foreignKeys) {
+                    entity.foreignKeys.forEach(fk => {
+                        if (fk.references === selectedEntityId) {
+                            relatedEntityIds.add(entity.id);
+                        }
+                    });
+                }
+            });
+            relatedEntityIds.forEach(id => {
+                const relatedCard = document.querySelector(`.entity-card-item[data-entity-id="${id}"]`);
+                if (relatedCard) relatedCard.classList.add('highlight-related');
+            });
+        }
+
+        function clearEntityHighlights() {
+            document.querySelectorAll('.entity-card-item').forEach(card => {
+                card.classList.remove('highlight-primary', 'highlight-related');
+            });
+        }
+
+        function showEntityDetails(entity, baseFields) {
+            const modalTitle = document.getElementById('entityModalLabel');
+            const modalBody = document.getElementById('entityModalBody');
+            modalTitle.textContent = `${entity.persianName} (${entity.tableName})`;
+
+            let fieldsTableBodyHtml = '';
+            if (entity.fields && entity.fields.length > 0) {
+                entity.fields.forEach(fieldConfig => {
+                    let fieldName;
+                    let feature = '-';
+                    let isEnumField = false;
+                    let enumName = '';
+                    let enumValues = [];
+
+                    if (typeof fieldConfig === 'string') {
+                        fieldName = fieldConfig;
+                    } else if (typeof fieldConfig === 'object' && fieldConfig !== null && fieldConfig.name) {
+                        fieldName = fieldConfig.name;
+                        if (fieldConfig.isEnum && fieldConfig.enumName && fieldConfig.enumValues) {
+                            isEnumField = true;
+                            enumName = fieldConfig.enumName;
+                            enumValues = fieldConfig.enumValues;
+                        }
+                    }
+
+                    const fk = entity.foreignKeys ? entity.foreignKeys.find(f => f.name === fieldName) : null;
+
+                    if (fieldName === 'id' && !entity.excludeBaseFields) {
+                        feature = '<span class="badge bg-primary">کلید اصلی</span>';
+                    } else if (fk) {
+                        const refEntity = allEntitiesMap.get(fk.references);
+                        const refName = refEntity ? `${refEntity.persianName} (${refEntity.tableName})` : fk.references;
+                        feature = `<span class="badge bg-warning">کلید خارجی به ${refName}</span>`;
+                    } else if (isEnumField) {
+                        feature = `<span class="badge bg-info">Enum: ${enumName}</span><br><small class="text-muted">${enumValues.join(', ')}</small>`;
+                    }
+
+                    fieldsTableBodyHtml += `<tr><td>${fieldName}</td><td>${feature}</td></tr>`;
+                });
+            } else {
+                fieldsTableBodyHtml += '<tr><td colspan="2">بدون فیلد</td></tr>';
+            }
+
+            let baseFieldsHtml = '';
+            if (!entity.excludeBaseFields && baseFields && baseFields.length > 0) {
+                baseFieldsHtml = `<h6 class="mt-4">فیلدهای پایه حسابرسی:</h6><p class="small text-muted">${baseFields.join(', ')}</p>`;
+            }
+
+            modalBody.innerHTML = `
+            <p>${entity.persianName} موجودیتی است که در جدول <code>${entity.tableName}</code> ذخیره می‌شود.</p>
+            <h6 class="mb-3">فیلدها:</h6>
+            <div class="mb-3">
+                <table class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>نام فیلد (انگلیسی)</th>
+                            <th>ویژگی</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${fieldsTableBodyHtml}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mb-3">
+                <strong>استفاده از فیلدهای حسابرسی پایه:</strong> ${entity.excludeBaseFields ? '<span class="badge bg-danger">عدم استفاده</span>' : '<span class="badge bg-success">استفاده می‌شود</span>'}
+            </div>
+            ${baseFieldsHtml}
+        `;
+            const entityModal = new bootstrap.Modal(document.getElementById('entityModal'));
+            entityModal.show();
+        }
+
+        function showRequirementDetails(requirement) {
+            const modalTitle = document.getElementById('requirementModalLabel');
+            const modalBody = document.getElementById('requirementModalBody');
+            modalTitle.textContent = requirement.name;
+
+            let actionsHtml = '';
+            if (requirement.actions && requirement.actions.length > 0) {
+                actionsHtml = `<h6>اکشن‌ها:</h6><ul>${requirement.actions.map(action => `<li><strong>${action.name}:</strong> ${action.description}</li>`).join('')}</ul>`;
+            }
+
+            let viewsHtml = '';
+            if (requirement.views && requirement.views.length > 0) {
+                viewsHtml = `<h6>ویوها:</h6><ul>${requirement.views.map(view => `<li><code>${view}</code></li>`).join('')}</ul>`;
+            }
+
+            let primaryEntityHtml = '';
+            if (requirement.primaryEntityId && currentProjectData && currentProjectData.entities) {
+                const primaryEntity = currentProjectData.entities.find(e => e.id === requirement.primaryEntityId);
+                if (primaryEntity) {
+                    primaryEntityHtml = `<h6 class="mt-4">موجودیت اصلی:</h6><p><strong>${primaryEntity.persianName}</strong> (<code>${primaryEntity.tableName}</code>)</p>`;
+                }
+            }
+
+            let developerTasksHtml = '';
+            if (requirement.developerTasks && requirement.developerTasks.length > 0) {
+                developerTasksHtml = `<h6 class="mt-4">تسک‌های توسعه‌دهندگان:</h6><ul class="list-group">${requirement.developerTasks.map(task => `<li class="list-group-item"><strong>${task.id}:</strong> ${task.description}</li>`).join('')}</ul>`;
+            }
+
+            modalBody.innerHTML = `
+            <p>${requirement.description}</p><hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Area:</strong> ${requirement.areaName || 'Root'} <br>
+                    <strong>Controller:</strong> ${requirement.controllerName || 'N/A'}
+                </div>
+                <div class="col-md-6 text-start">
+                    <strong>شناسه:</strong> ${requirement.id}
+                </div>
+            </div><hr>
+            ${actionsHtml}
+            ${viewsHtml}
+            ${primaryEntityHtml}
+            ${developerTasksHtml}
+        `;
+            const requirementModal = new bootstrap.Modal(document.getElementById('requirementModal'));
+            requirementModal.show();
+        }
+
+        function renderRoles(roles) {
+            const container = document.getElementById('roles-container');
+            container.innerHTML = '';
+            allRequirementsMap.clear(); // Clear previous map
+            roles.forEach(role => {
+                role.requirements.forEach(req => allRequirementsMap.set(req.id, req));
+
+                const requirementsList = role.requirements.map(req => {
+                    return `<li class="requirement-item d-flex justify-content-between align-items-center" data-req-id="${req.id}">
+                            <div>
+                                <strong>${req.name}</strong>
+                                <div class="text-muted small">${req.areaName ? `Area: ${req.areaName}, ` : ''}Controller: ${req.controllerName || 'N/A'}</div>
+                            </div>
+                            <i class="fas fa-info-circle text-info"></i>
+                        </li>`;
+                }).join('');
+
+                const roleEl = document.createElement('div');
+                roleEl.className = 'col-12 mb-4';
+                roleEl.innerHTML = `
+                <div class="role-card">
+                    <div class="role-card-header d-flex justify-content-between align-items-center">
+                        <div><i class="fas fa-user-tag me-2"></i>${role.name}</div>
+                        ${role.needsPanel ? '<span class="badge bg-success">نیاز به پنل</span>' : '<span class="badge bg-secondary">بدون پنل</span>'}
+                    </div>
+                    <div class="role-card-body">
+                        <p>${role.description}</p>
+                        <h6 class="mt-3 mb-2">نیازمندی‌ها:</h6>
+                        <ul class="list-group">${requirementsList}</ul>
+                        <div class="mt-2 text-muted small">شناسه: ${role.id}</div>
+                    </div>
+                </div>
+            `;
+                container.appendChild(roleEl);
+
+                roleEl.querySelectorAll('.requirement-item').forEach(item => {
+                    item.addEventListener('click', function () {
+                        const reqId = this.getAttribute('data-req-id');
+                        const foundReq = allRequirementsMap.get(reqId);
+                        if (foundReq) {
+                            showRequirementDetails(foundReq);
+                        }
+                    });
+                });
+            });
+        }
+
+        function renderRoadmap(roadmap) {
+            const container = document.getElementById('roadmap-steps');
+            container.innerHTML = '';
+
+            if (!roadmap || roadmap.length === 0) {
+                container.innerHTML = '<div class="alert alert-info text-center">نقشه راه پیاده‌سازی برای این پروژه تعریف نشده است.</div>';
+                return;
+            }
+
+            roadmap.forEach((phase, index) => {
+                const phaseEl = document.createElement('div');
+                phaseEl.className = 'roadmap-step';
+                phaseEl.setAttribute('data-phase-id', phase.id);
+
+                let phaseNumber = index + 1;
+                let phaseTitle = phase.title;
+
+                let tasksHtml = '';
+                if (phase.tasks && phase.tasks.length > 0) {
+                    const taskItemsHtml = phase.tasks.map(taskRef => {
+                        let taskDisplayHtml = '';
+                        let taskDescriptionForCopy = ''; // Will hold the raw description for copying
+
+                        const req = allRequirementsMap.get(taskRef.relatedRequirementId);
+                        if (req && req.developerTasks) {
+                            const devTask = req.developerTasks.find(dt => dt.id === taskRef.relatedDeveloperTaskId);
+                            if (devTask) {
+                                taskDescriptionForCopy = devTask.description;
+                                taskDisplayHtml = `<i class="fas fa-check-circle text-success me-2"></i><strong>${taskRef.id}:</strong> <a href="#" class="roadmap-req-link" data-req-id="${req.id}"><strong>${req.name}</strong></a> (<small>${req.id}</small>) - ${devTask.description}`;
+                            } else {
+                                taskDisplayHtml = `<i class="fas fa-check-circle text-warning me-2"></i><strong>${taskRef.id}:</strong> تسک توسعه‌دهنده یا نیازمندی مرتبط یافت نشد. (Req: ${taskRef.relatedRequirementId}, DevTask: ${taskRef.relatedDeveloperTaskId})`;
+                            }
+                        } else {
+                            taskDisplayHtml = `<i class="fas fa-check-circle text-warning me-2"></i><strong>${taskRef.id}:</strong> ارجاع نیازمندی نامشخص است. (Req: ${taskRef.relatedRequirementId})`;
+                        }
+
+                        // Escape taskDescriptionForCopy for the onclick attribute
+                        const escapedTaskDescription = escapeJsStringLiteral(taskDescriptionForCopy);
+
+                        return `<li class="list-group-item d-flex justify-content-between align-items-center task-item">
+                                <div>${taskDisplayHtml}</div>
+                                <button class="btn btn-sm btn-outline-secondary copy-task-btn" onclick="copyTaskContext('${taskRef.id}', '${escapedTaskDescription}', '${taskRef.relatedRequirementId}', '${taskRef.relatedDeveloperTaskId}')"><i class="fas fa-copy"></i></button>
+                            </li>`;
+                    }).join('');
+                    tasksHtml = `<h6 class="mt-3 mb-2">مراحل پیاده‌سازی این فاز:</h6><ul class="list-group list-group-flush">${taskItemsHtml}</ul>`;
+                } else {
+                    tasksHtml = '<p class="text-muted small mt-3">هیچ تسکی برای این فاز تعریف نشده است.</p>';
+                }
+
+                phaseEl.innerHTML = `
+                <div class="roadmap-step-header">
+                    <h5 class="roadmap-step-title">${phaseNumber}. ${phaseTitle}</h5>
+                </div>
+                <p class="mb-0">${phase.description}</p>
+                ${tasksHtml}
+            `;
+                container.appendChild(phaseEl);
+
+                phaseEl.addEventListener('click', function () {
+                    showRoadmapDetails(phase);
+                });
+
+                phaseEl.querySelectorAll('.roadmap-req-link').forEach(link => {
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent modal from closing if clicked on link inside it
+                        const reqId = this.getAttribute('data-req-id');
+                        const foundReq = allRequirementsMap.get(reqId);
+                        if (foundReq) {
+                            showRequirementDetails(foundReq);
+                        }
+                    });
+                });
+
+                if (index < roadmap.length - 1) {
+                    const arrowEl = document.createElement('div');
+                    arrowEl.className = 'd-flex justify-content-center mb-3';
+                    arrowEl.innerHTML = '<i class="fas fa-arrow-down fa-2x text-primary"></i>';
+                    container.appendChild(arrowEl);
+                }
+            });
+        }
+
+        function showRoadmapDetails(phase) {
+            const modalTitle = document.getElementById('roadmapModalLabel');
+            const modalBody = document.getElementById('roadmapModalBody');
+            modalTitle.textContent = phase.title;
+
+            let requirementsHtml = '';
+            if (phase.implementedRequirements && phase.implementedRequirements.length > 0) {
+                requirementsHtml = `
+                <h6 class="mt-4">نیازمندی‌های پیاده‌سازی شده در این فاز:</h6>
+                <ul class="list-group">${phase.implementedRequirements.map(reqId => {
+                    const foundReq = allRequirementsMap.get(reqId);
+                    const reqName = foundReq ? foundReq.name : reqId;
+                    return `<li class="list-group-item"><strong>${reqName}</strong> (<small>${reqId}</small>)</li>`;
+                }).join('')}</ul>`;
+            }
+
+            let tasksInModalHtml = '';
+            if (phase.tasks && phase.tasks.length > 0) {
+                const taskItemsHtml = phase.tasks.map(taskRef => {
+                    let taskText = `<strong>${taskRef.id}:</strong> `;
+                    const req = allRequirementsMap.get(taskRef.relatedRequirementId);
+                    if (req && req.developerTasks) {
+                        const devTask = req.developerTasks.find(dt => dt.id === taskRef.relatedDeveloperTaskId);
+                        if (devTask) {
+                            taskText += `<a href="#" class="roadmap-req-link" data-req-id="${req.id}"><strong>${req.name}</strong></a> (<small>${req.id}</small>) - ${devTask.description}`;
+                        } else {
+                            taskText += `تسک توسعه‌دهنده یا نیازمندی مرتبط یافت نشد. (Req: ${taskRef.relatedRequirementId}, DevTask: ${taskRef.relatedDeveloperTaskId})`;
+                        }
+                    } else {
+                        taskText += `ارجاع نیازمندی نامشخص است. (Req: ${taskRef.relatedRequirementId})`;
+                    }
+                    return `<li class="list-group-item">${taskText}</li>`;
+                }).join('');
+                tasksInModalHtml = `
+                <h6 class="mt-4">تسک‌های جزئی این فاز (ارجاع به نیازمندی‌ها):</h6>
+                <ul class="list-group">${taskItemsHtml}</ul>`;
+            }
+
+            modalBody.innerHTML = `
+            <p>${phase.description}</p>
+            ${requirementsHtml}
+            ${tasksInModalHtml}
+        `;
+            const roadmapModal = new bootstrap.Modal(document.getElementById('roadmapModal'));
+            roadmapModal.show();
+
+            modalBody.querySelectorAll('.roadmap-req-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const reqId = this.getAttribute('data-req-id');
+                    const foundReq = allRequirementsMap.get(reqId);
+                    if (foundReq) {
+                        showRequirementDetails(foundReq);
+                    }
+                });
+            });
+        }
+
+        function copyTaskContext(roadmapTaskId, taskDescription, relatedRequirementId, relatedDeveloperTaskId) {
+            let context = `--- Task Context for LLM ---\n\nProject Name: ${currentProjectData.projectInfo.name}\nProject Description: ${currentProjectData.projectInfo.description}\n\nRoadmap Task ID: ${roadmapTaskId}\nTask Description: ${taskDescription}\n`;
+
+            if (relatedRequirementId && relatedDeveloperTaskId) {
+                const req = allRequirementsMap.get(relatedRequirementId);
+                if (req) {
+                    const devTask = req.developerTasks.find(dt => dt.id === relatedDeveloperTaskId);
+                    if (devTask) {
+                        context += `\n--- Related Requirement Details ---\nRequirement Name: ${req.name} (${req.id})\nDescription: ${req.description}\n`;
+                        if (req.areaName) context += `Area: ${req.areaName}\n`;
+                        if (req.controllerName) context += `Controller: ${req.controllerName}\n`;
+                        if (req.primaryEntityId) {
+                            const primaryEntity = allEntitiesMap.get(req.primaryEntityId);
+                            if (primaryEntity) context += `Primary Entity: ${primaryEntity.persianName} (${primaryEntity.tableName})\n`;
+                        }
+                        if (req.actions && req.actions.length > 0) {
+                            context += `Actions:\n`;
+                            req.actions.forEach(action => {
+                                context += `  - ${action.name}: ${action.description}\n`;
+                            });
+                        }
+                        if (req.views && req.views.length > 0) {
+                            context += `Views:\n`;
+                            req.views.forEach(view => {
+                                context += `  - ${view}\n`;
+                            });
+                        }
+                    }
+                }
+            }
+            context += `\n--- End of Task Context ---`;
+
+            navigator.clipboard.writeText(context).then(() => {
+                alert('Task context copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy task context to clipboard. Please copy manually if needed.');
+            });
+        }
+
+        function renderProject(data) {
+            document.getElementById('project-name').textContent = data.projectInfo.name;
+            document.getElementById('overview-project-name').textContent = data.projectInfo.name;
+            document.getElementById('overview-project-description').textContent = data.projectInfo.description;
+
+            currentProjectData = data;
+
+            // Populate allRequirementsMap once
+            allRequirementsMap.clear();
+            data.userRoles.forEach(role => {
+                role.requirements.forEach(req => allRequirementsMap.set(req.id, req));
+            });
+
+            renderEntities(data.entities, data.baseFields);
+            renderRoles(data.userRoles);
+            renderRoadmap(data.implementationRoadmap);
+        }
+
+        document.querySelectorAll('#project-nav .nav-link').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                document.querySelectorAll('#project-nav .nav-link').forEach(navLink => {
+                    navLink.classList.remove('active');
+                });
+                this.classList.add('active');
+                const targetId = this.getAttribute('href');
+                document.querySelector(targetId).classList.add('show', 'active');
+                if (targetId === '#entities') {
+                    clearEntityHighlights();
+                }
+            });
+        });
+
+        document.getElementById('toggle-json-input').addEventListener('click', function () {
+            const container = document.getElementById('json-input-container');
+            container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('close-json-input').addEventListener('click', function () {
+            document.getElementById('json-input-container').style.display = 'none';
+        });
+
+        document.getElementById('loadBtn').addEventListener('click', function () {
+            const jsonInput = document.getElementById('jsonInput').value;
+            try {
+                const data = JSON.parse(jsonInput);
+                currentProjectData = data;
+                renderProject(data);
+                document.getElementById('json-input-container').style.display = 'none';
+            } catch (error) {
+                alert('خطا در parse JSON: ' + error.message);
+            }
+        });
+
+        // Automatically show JSON input on load for easy testing
+        document.getElementById('json-input-container').style.display = 'block';
+    </script>
+</body>
+
+</html>
