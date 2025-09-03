@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>میزکار تکرارشونده Vibe</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
+        type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3f51b5;
+            --secondary-color: #f50057;
+            --background-light: #f5f7ff;
+            --text-dark: #333;
+            --border-color: #e0e0e0;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --info-color: #2196f3;
+            --danger-color: #f44336;
+        }
+
+        body {
+            font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-dark);
+            overflow: hidden;
+            /* Prevent body scroll */
+        }
+
+        .workbench-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            height: 100vh;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .panel {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 12px 15px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .panel-body {
+            padding: 15px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        #project-tree ul {
+            padding-right: 1.5rem;
+            list-style-type: none;
+        }
+
+        #project-tree li {
+            padding: 5px 0;
+        }
+
+        #project-tree .tree-item {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        #project-tree .tree-item:hover,
+        #project-tree .tree-item.active {
+            background-color: var(--background-light);
+        }
+
+        .changeset-item {
+            font-size: 0.9rem;
+            border-right-width: 4px;
+            border-right-style: solid;
+        }
+
+        .changeset-item.add {
+            border-right-color: var(--success-color);
+        }
+
+        .changeset-item.modify {
+            border-right-color: var(--warning-color);
+        }
+
+        .changeset-item.delete {
+            border-right-color: var(--danger-color);
+        }
+
+        .prompt-template {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            border-radius: 8px;
+            padding: 15px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .json-input-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            padding: 15px;
+            z-index: 900;
+            display: none;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-float {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="workbench-container" id="main-workbench" style="display: none;">
+        <!-- Panel 1: Project Tree -->
+        <div class="panel">
+            <div class="panel-header"><i class="fas fa-sitemap me-2"></i>ساختار پروژه</div>
+            <div class="panel-body" id="project-tree"></div>
+        </div>
+
+        <!-- Panel 2: Editor -->
+        <div class="panel">
+            <div class="panel-header"><i class="fas fa-edit me-2"></i>ویرایشگر جزئیات</div>
+            <div class="panel-body" id="details-editor">
+                <div class="text-center text-muted mt-5">
+                    <i class="fas fa-mouse-pointer fa-3x mb-3"></i>
+                    <p>برای مشاهده و ویرایش، یک آیتم را از درخت ساختار پروژه انتخاب کنید.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Changeset & Prompts -->
+        <div class="panel">
+            <div class="panel-header"><i class="fas fa-stream me-2"></i>مجموعه تغییرات (Changeset)</div>
+            <div class="panel-body" id="changeset-panel-body">
+                <div id="changeset-list" class="mb-3">
+                    <p class="text-muted text-center small">تغییراتی که اعمال می‌کنید در اینجا لیست می‌شوند...</p>
+                </div>
+                <hr>
+                <div class="d-grid">
+                    <button class="btn btn-primary" id="generate-prompts-btn" disabled>
+                        <i class="fas fa-magic-wand-sparkles me-2"></i>تولید پرامپت‌های اصلاحی
+                    </button>
+                </div>
+                <div id="prompts-output" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="empty-state-container" class="d-flex align-items-center justify-content-center h-100">
+        <div class="card shadow-sm text-center" style="max-width: 600px;">
+            <div class="card-body p-5">
+                <i class="fas fa-file-import fa-3x text-primary mb-4"></i>
+                <h2 class="card-title">میزکار تکرارشونده Vibe</h2>
+                <p class="card-text text-muted">برای شروع فرآیند اصلاح و بازخورد، لطفاً فایل JSON مستندات پروژه خود را
+                    بارگذاری کنید.</p>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-float" id="toggle-json-input" title="ورود JSON جدید"><i class="fas fa-code"></i></button>
+    <div class="json-input-container" id="json-input-container">
+        <div class="d-flex justify-content-between mb-2">
+            <h5>ورود JSON مستندات پروژه</h5><button type="button" class="btn-close" id="close-json-input"></button>
+        </div>
+        <textarea id="jsonInput" class="form-control mb-2" rows="10"
+            placeholder="محتوای فایل JSON خروجی از json-generator.html را اینجا وارد کنید..."></textarea>
+        <div class="d-flex justify-content-end"><button id="loadBtn" class="btn btn-primary">بارگذاری نسخه پایه</button>
+        </div>
+    </div>
+
+    <script>
+        let originalProjectData = null;
+        let workingProjectData = null;
+        let changeset = [];
+
+        // --- Core Functions ---
+        function initializeWorkbench(jsonText) {
+            try {
+                const data = JSON.parse(jsonText);
+                if (!data || !data.projectInfo) throw new Error('ساختار JSON نامعتبر است.');
+
+                originalProjectData = JSON.parse(jsonText); // Immutable base
+                workingProjectData = data; // Mutable copy for UI
+                changeset = [];
+
+                document.getElementById('empty-state-container').style.display = 'none';
+                document.getElementById('main-workbench').style.display = 'grid';
+
+                renderProjectTree();
+                renderChangeset();
+                clearDetailsEditor();
+            } catch (error) {
+                alert('خطا در بارگذاری JSON: ' + error.message);
+            }
+        }
+
+        function trackChange(action, target, payload) {
+            const change = {
+                id: `chg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                action, // 'ADD', 'MODIFY', 'DELETE'
+                target, // { type: 'ENTITY_FIELD', entityId: '...', fieldName: '...' }
+                payload, // { newValue: '...', oldValue: '...' } or { data: {...} }
+                timestamp: new Date().toISOString()
+            };
+            changeset.push(change);
+            renderChangeset();
+        }
+
+        // --- Rendering Functions ---
+        function renderProjectTree() {
+            const treeContainer = document.getElementById('project-tree');
+            let html = '<ul>';
+
+            html += `<li><span class="tree-item" data-type="PROJECT_INFO"><i class="fas fa-info-circle text-primary me-2"></i>${workingProjectData.projectInfo.name}</span></li>`;
+
+            // Entities
+            html += '<li><span class="fw-bold"><i class="fas fa-database text-info me-2"></i>موجودیت‌ها</span><ul>';
+            workingProjectData.entities.forEach(entity => {
+                html += `<li><span class="tree-item" data-type="ENTITY" data-id="${entity.id}"><i class="fas fa-table me-2"></i>${entity.persianName}</span></li>`;
+            });
+            html += '</ul></li>';
+
+            // User Roles
+            html += '<li><span class="fw-bold"><i class="fas fa-users text-warning me-2"></i>نقش‌های کاربری</span><ul>';
+            workingProjectData.userRoles.forEach(role => {
+                html += `<li><span class="tree-item" data-type="ROLE" data-id="${role.id}"><i class="fas fa-user-tag me-2"></i>${role.name}</span><ul>`;
+                (role.requirements || []).forEach(req => {
+                    html += `<li><span class="tree-item" data-type="REQUIREMENT" data-id="${req.id}"><i class="fas fa-tasks me-2"></i>${req.name}</span></li>`;
+                });
+                html += '</ul></li>';
+            });
+            html += '</ul></li>';
+
+            html += '</ul>';
+            treeContainer.innerHTML = html;
+        }
+
+        function clearDetailsEditor(message = '<div class="text-center text-muted mt-5"><i class="fas fa-mouse-pointer fa-3x mb-3"></i><p>برای مشاهده و ویرایش، یک آیتم را از درخت ساختار پروژه انتخاب کنید.</p></div>') {
+            document.getElementById('details-editor').innerHTML = message;
+        }
+
+        function renderDetails(type, id) {
+            const editor = document.getElementById('details-editor');
+            let html = '';
+
+            switch (type) {
+                case 'ENTITY':
+                    const entity = workingProjectData.entities.find(e => e.id === id);
+                    if (!entity) return;
+                    html += `<h5><i class="fas fa-table me-2"></i>موجودیت: ${entity.persianName}</h5>`;
+                    html += `<p class="text-muted">نام جدول: <code>${entity.tableName}</code></p><hr>`;
+                    html += `<h6>فیلدها:</h6><ul class="list-group">`;
+                    entity.fields.forEach((field, index) => {
+                        const fieldName = typeof field === 'string' ? field : field.name;
+                        html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                    ${fieldName}
+                                    <button class="btn btn-sm btn-outline-danger delete-field-btn" data-entity-id="${id}" data-field-index="${index}"><i class="fas fa-trash"></i></button>
+                                 </li>`;
+                    });
+                    html += `</ul>`;
+                    // Add new field form
+                    html += `<div class="card mt-3 bg-light border">
+                                <div class="card-body">
+                                    <h6 class="card-title">افزودن فیلد جدید</h6>
+                                    <div class="mb-2">
+                                        <input type="text" id="new-field-name" class="form-control form-control-sm" placeholder="نام فیلد (مثلا: Title)">
+                                    </div>
+                                    <div class="mb-2">
+                                        <input type="text" id="new-field-type" class="form-control form-control-sm" placeholder="نوع داده (مثلا: string)">
+                                    </div>
+                                    <button class="btn btn-sm btn-success w-100" id="add-field-btn" data-entity-id="${id}"><i class="fas fa-plus me-2"></i>افزودن</button>
+                                </div>
+                            </div>`;
+                    break;
+                case 'REQUIREMENT':
+                    let req, role;
+                    for (const r of workingProjectData.userRoles) {
+                        const foundReq = r.requirements.find(rq => rq.id === id);
+                        if (foundReq) {
+                            req = foundReq;
+                            role = r;
+                            break;
+                        }
+                    }
+                    if (!req) return;
+                    html += `<h5><i class="fas fa-tasks me-2"></i>نیازمندی: ${req.name}</h5>`;
+                    html += `<p class="text-muted">متعلق به نقش: ${role.name}</p><hr>`;
+                    html += `<div class="mb-3"><label for="req-desc-editor" class="form-label">توضیحات:</label>
+                             <textarea id="req-desc-editor" class="form-control" rows="8">${req.description}</textarea></div>`;
+                    html += `<button class="btn btn-primary" id="save-req-desc-btn" data-req-id="${id}"><i class="fas fa-save me-2"></i>ذخیره تغییرات توضیحات</button>`;
+                    break;
+                default:
+                    clearDetailsEditor('<div class="text-center text-muted mt-5"><p>ویرایش برای این نوع آیتم هنوز پیاده‌سازی نشده است.</p></div>');
+            }
+            editor.innerHTML = html;
+        }
+
+        function renderChangeset() {
+            const listContainer = document.getElementById('changeset-list');
+            const generateBtn = document.getElementById('generate-prompts-btn');
+            if (changeset.length === 0) {
+                listContainer.innerHTML = '<p class="text-muted text-center small">تغییراتی که اعمال می‌کنید در اینجا لیست می‌شوند...</p>';
+                generateBtn.disabled = true;
+                return;
+            }
+
+            generateBtn.disabled = false;
+            let html = '<ul class="list-group list-group-flush">';
+            changeset.slice().reverse().forEach(change => {
+                let title = '';
+                let details = '';
+                let actionClass = '';
+
+                switch (change.action) {
+                    case 'ADD': actionClass = 'add'; break;
+                    case 'MODIFY': actionClass = 'modify'; break;
+                    case 'DELETE': actionClass = 'delete'; break;
+                }
+
+                switch (change.target.type) {
+                    case 'ENTITY_FIELD':
+                        const entity = originalProjectData.entities.find(e => e.id === change.target.entityId);
+                        if (change.action === 'ADD') {
+                            title = `<i class="fas fa-plus-circle me-2"></i>افزودن فیلد به <strong>${entity.persianName}</strong>`;
+                            details = `فیلد <code>${change.payload.data.name}</code> از نوع <code>${change.payload.data.type}</code> اضافه شد.`;
+                        } else if (change.action === 'DELETE') {
+                            const fieldName = typeof change.payload.data === 'string' ? change.payload.data : change.payload.data.name;
+                            title = `<i class="fas fa-trash-alt me-2"></i>حذف فیلد از <strong>${entity.persianName}</strong>`;
+                            details = `فیلد <code>${fieldName}</code> حذف شد.`;
+                        }
+                        break;
+                    case 'REQUIREMENT':
+                        if (change.action === 'MODIFY') {
+                            const req = originalProjectData.userRoles.flatMap(r => r.requirements).find(rq => rq.id === change.target.requirementId);
+                            title = `<i class="fas fa-pencil-alt me-2"></i>تغییر توضیحات نیازمندی <strong>${req.name}</strong>`;
+                            details = 'توضیحات بروزرسانی شد.';
+                        }
+                        break;
+                }
+
+                html += `<li class="list-group-item changeset-item ${actionClass}">
+                            <div class="fw-bold">${title}</div>
+                            <div class="small text-muted">${details}</div>
+                         </li>`;
+            });
+            html += '</ul>';
+            listContainer.innerHTML = html;
+        }
+
+        function renderPrompts() {
+            const outputContainer = document.getElementById('prompts-output');
+            outputContainer.innerHTML = '<h6 class="text-center">در حال تولید پرامپت‌ها...</h6>';
+            let promptsHtml = '';
+
+            changeset.forEach(change => {
+                let prompt = '';
+                let title = '';
+
+                switch (change.target.type) {
+                    case 'ENTITY_FIELD':
+                        const entity = originalProjectData.entities.find(e => e.id === change.target.entityId);
+                        const entityClassName = entity.tableName.slice(0, -1); // 'Products' -> 'Product'
+                        if (change.action === 'ADD') {
+                            title = `پرامپت: افزودن فیلد ${change.payload.data.name}`;
+                            prompt = `تو یک برنامه‌نویس ارشد #C با تخصص در Entity Framework Code-First هستی.\n\n`
+                                + `وظیفه: فیلد جدیدی به موجودیت ${entityClassName} اضافه کن.\n\n`
+                                + `1. فایل مدل موجود در مسیر 'Models/${entityClassName}.cs' را باز کن.\n`
+                                + `2. پراپرتی عمومی زیر را به کلاس اضافه کن:\n`
+                                + `   public ${change.payload.data.type} ${change.payload.data.name} { get; set; }\n`
+                                + `3. در Package Manager Console، دستور زیر را برای ایجاد migration جدید اجرا کن:\n`
+                                + `   add-migration Add_${change.payload.data.name}_To_${entityClassName}\n`
+                                + `4. در نهایت، دستور زیر را برای اعمال تغییرات به دیتابیس اجرا کن:\n`
+                                + `   update-database\n\n`
+                                + `فقط کدها یا دستورات خواسته شده را ارائه بده و از توضیحات اضافی خودداری کن.`;
+                        } else if (change.action === 'DELETE') {
+                            const fieldName = typeof change.payload.data === 'string' ? change.payload.data : change.payload.data.name;
+                            title = `پرامپت: حذف فیلد ${fieldName}`;
+                            prompt = `تو یک برنامه‌نویس ارشد #C با تخصص در Entity Framework Code-First هستی.\n\n`
+                                + `وظیفه: یک فیلد را از موجودیت ${entityClassName} حذف کن.\n\n`
+                                + `1. فایل مدل موجود در مسیر 'Models/${entityClassName}.cs' را باز کن.\n`
+                                + `2. پراپرتی عمومی با نام '${fieldName}' را از کلاس حذف کن.\n`
+                                + `3. در Package Manager Console، دستور زیر را برای ایجاد migration جدید اجرا کن:\n`
+                                + `   add-migration Remove_${fieldName}_From_${entityClassName}\n`
+                                + `4. در نهایت، دستور زیر را برای اعمال تغییرات به دیتابیس اجرا کن:\n`
+                                + `   update-database`;
+                        }
+                        break;
+                    case 'REQUIREMENT':
+                        const req = originalProjectData.userRoles.flatMap(r => r.requirements).find(rq => rq.id === change.target.requirementId);
+                        if (change.action === 'MODIFY') {
+                            title = `پرامپت: بروزرسانی منطق نیازمندی ${req.name}`;
+                            prompt = `تو یک برنامه‌نویس فول-استک ASP.NET MVC هستی.\n\n`
+                                + `نیازمندی کسب‌وکار برای '${req.name}' تغییر کرده است. لطفاً کد را بر اساس توضیحات جدید بروزرسانی کن.\n\n`
+                                + `کنترلر مرتبط: \`${req.controllerName}Controller.cs\`\n`
+                                + `ویوهای احتمالی: ${req.views.map(v => `\`${v}\``).join(', ')}\n\n`
+                                + `توضیحات **قدیمی**:\n"${req.description}"\n\n`
+                                + `توضیحات **جدید و بروز شده**:\n"${change.payload.newValue}"\n\n`
+                                + `وظیفه شما: کدهای موجود در کنترلر، سرویس‌ها و ویوهای مرتبط را بازبینی و اصلاح کن تا منطبق با توضیحات **جدید** شوند. فقط قطعه کدهای تغییر یافته را به همراه نام فایلشان ارائه بده.`;
+                        }
+                        break;
+                }
+
+                if (prompt) {
+                    promptsHtml += `<div class="mb-3">
+                                        <div class="fw-bold">${title}</div>
+                                        <pre class="prompt-template">${prompt.trim()}</pre>
+                                    </div>`;
+                }
+            });
+
+            outputContainer.innerHTML = promptsHtml || '<p class="text-muted">پرامپتی برای تغییرات ثبت شده تولید نشد.</p>';
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const jsonInputContainer = document.getElementById('json-input-container');
+            document.getElementById('toggle-json-input').addEventListener('click', () => {
+                jsonInputContainer.style.display = 'block';
+            });
+            document.getElementById('close-json-input').addEventListener('click', () => {
+                jsonInputContainer.style.display = 'none';
+            });
+            document.getElementById('loadBtn').addEventListener('click', () => {
+                const jsonText = document.getElementById('jsonInput').value;
+                if (!jsonText) { alert('لطفا ابتدا JSON را وارد کنید.'); return; }
+                initializeWorkbench(jsonText);
+                jsonInputContainer.style.display = 'none';
+            });
+            document.getElementById('generate-prompts-btn').addEventListener('click', renderPrompts);
+
+            // Delegated event listener for dynamic content
+            document.body.addEventListener('click', (e) => {
+                // Tree item click
+                if (e.target.matches('.tree-item')) {
+                    document.querySelectorAll('.tree-item.active').forEach(el => el.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const { type, id } = e.target.dataset;
+                    renderDetails(type, id);
+                }
+                // Add field button
+                if (e.target.matches('#add-field-btn')) {
+                    const entityId = e.target.dataset.entityId;
+                    const nameInput = document.getElementById('new-field-name');
+                    const typeInput = document.getElementById('new-field-type');
+
+                    if (nameInput.value && typeInput.value) {
+                        const newField = { name: nameInput.value, type: typeInput.value };
+                        const entity = workingProjectData.entities.find(en => en.id === entityId);
+                        entity.fields.push(newField.name); // Simplified for this example
+
+                        trackChange('ADD', { type: 'ENTITY_FIELD', entityId: entityId, fieldName: newField.name }, { data: newField });
+
+                        renderProjectTree();
+                        renderDetails('ENTITY', entityId);
+                        document.querySelector(`.tree-item[data-id="${entityId}"]`).classList.add('active');
+                    } else {
+                        alert('لطفاً نام و نوع فیلد را وارد کنید.');
+                    }
+                }
+                // Delete field button
+                if (e.target.matches('.delete-field-btn, .delete-field-btn *')) {
+                    const btn = e.target.closest('.delete-field-btn');
+                    const { entityId, fieldIndex } = btn.dataset;
+                    const entity = workingProjectData.entities.find(en => en.id === entityId);
+                    const deletedField = entity.fields.splice(fieldIndex, 1)[0];
+
+                    trackChange('DELETE', { type: 'ENTITY_FIELD', entityId: entityId }, { data: deletedField });
+
+                    renderProjectTree();
+                    renderDetails('ENTITY', entityId);
+                    document.querySelector(`.tree-item[data-id="${entityId}"]`).classList.add('active');
+                }
+                // Save requirement description
+                if (e.target.matches('#save-req-desc-btn')) {
+                    const reqId = e.target.dataset.reqId;
+                    const newValue = document.getElementById('req-desc-editor').value;
+                    let req, originalReq;
+
+                    for (const role of workingProjectData.userRoles) {
+                        req = role.requirements.find(r => r.id === reqId);
+                        if (req) break;
+                    }
+                    for (const role of originalProjectData.userRoles) {
+                        originalReq = role.requirements.find(r => r.id === reqId);
+                        if (originalReq) break;
+                    }
+
+                    if (req.description !== newValue) {
+                        trackChange('MODIFY', { type: 'REQUIREMENT', requirementId: reqId }, { newValue: newValue, oldValue: originalReq.description });
+                        req.description = newValue; // Update working data
+                        alert('تغییرات با موفقیت در مجموعه تغییرات ثبت شد.');
+                    } else {
+                        alert('تغییری برای ثبت وجود ندارد.');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

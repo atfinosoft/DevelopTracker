@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نمایشگر مستندات پروژه</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"
+        type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3f51b5;
+            --secondary-color: #f50057;
+            --background-light: #f5f7ff;
+            --text-dark: #333;
+            --border-color: #e0e0e0;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --info-color: #2196f3;
+            --fk-color: #ff9800;
+        }
+
+        body {
+            font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+            background-color: var(--background-light);
+            color: var(--text-dark);
+            direction: rtl;
+            text-align: right;
+        }
+
+        .sidebar {
+            background-color: #fff;
+            border-left: 1px solid var(--border-color);
+            height: 100vh;
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 250px;
+            z-index: 1000;
+            padding-top: 20px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .content {
+            margin-right: 250px;
+            padding: 20px;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .nav-link {
+            color: var(--text-dark);
+            border-radius: 0;
+            padding: 10px 20px;
+            margin-bottom: 5px;
+            text-align: right;
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link:hover:not(.active) {
+            background-color: var(--background-light);
+        }
+
+        .section-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .section-body {
+            padding: 20px;
+        }
+
+        .entity-modal .modal-header,
+        .requirement-modal .modal-header {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .entity-modal .table,
+        .requirement-modal .table {
+            font-size: 0.9rem;
+        }
+
+        .json-input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: calc(100% - 250px);
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            padding: 15px;
+            z-index: 900;
+            display: none;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-float {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            border: none;
+        }
+
+        .role-card {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: right;
+        }
+
+        .role-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-card-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+
+        .role-card-body {
+            padding: 15px;
+        }
+
+        .requirement-item {
+            cursor: pointer;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            background-color: #e3f2fd;
+            border-right: 3px solid var(--info-color);
+            transition: background-color 0.2s;
+        }
+
+        .requirement-item:hover {
+            background-color: #bbdefb;
+        }
+
+        .requirement-modal .modal-body ul {
+            padding-right: 20px;
+        }
+
+        .entity-card-item {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .entity-card-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .entity-card-item.highlight-primary {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.3);
+        }
+
+        .entity-card-item.highlight-related {
+            border-color: var(--info-color);
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        .entity-search-container {
+            margin-bottom: 20px;
+            display: flex;
+        }
+
+        .entity-search-container .form-control {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        .entity-search-container .btn {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h5 id="project-name" class="mb-1">مستندات پروژه</h5>
+        </div>
+        <ul class="nav flex-column" id="project-nav">
+            <li class="nav-item"><a class="nav-link active" href="#overview"><i class="fas fa-home me-2"></i> نمای
+                    کلی</a></li>
+            <li class="nav-item"><a class="nav-link" href="#entities"><i class="fas fa-database me-2"></i>
+                    موجودیت‌ها</a></li>
+            <li class="nav-item"><a class="nav-link" href="#roles"><i class="fas fa-users me-2"></i> نقش‌های کاربری</a>
+            </li>
+        </ul>
+    </div>
+    <div class="content">
+
+        <div id="empty-state-container" class="text-center pt-5">
+            <div class="card shadow-sm" style="max-width: 600px; margin: auto;">
+                <div class="card-body p-5">
+                    <i class="fas fa-file-import fa-3x text-primary mb-4"></i>
+                    <h2 class="card-title">نمایشگر مستندات پروژه</h2>
+                    <p class="card-text text-muted">برای شروع، لطفاً فایل JSON مستندات پروژه خود را بارگذاری کنید.</p>
+                    <p>بر روی دکمه شناور <i class="fas fa-code"></i> در گوشه پایین-چپ صفحه کلیک کرده، محتوای JSON را
+                        وارد و سپس دکمه "بارگذاری" را بزنید.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="project-content-container" style="display: none;">
+            <div class="tab-pane fade show active" id="overview">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-info-circle me-2"></i> اطلاعات کلی پروژه</div>
+                    <div class="section-body">
+                        <h3 id="overview-project-name" class="mb-3"></h3>
+                        <p id="overview-project-description" class="lead"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="entities">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-database me-2"></i> موجودیت‌ها</div>
+                    <div class="section-body">
+                        <div class="entity-search-container">
+                            <input type="text" id="entity-search-input" class="form-control"
+                                placeholder="جستجوی موجودیت (نام فارسی یا نام جدول)...">
+                            <button class="btn btn-outline-secondary" id="clear-entity-search" style="display:none;"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+                        <div class="row" id="entity-cards-container"></div>
+                        <div class="alert alert-info mt-3 text-center">با کلیک بر روی یک موجودیت، جزئیات آن و
+                            موجودیت‌های مرتبط با آن برجسته می‌شوند.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="roles">
+                <div class="section-card">
+                    <div class="section-header"><i class="fas fa-users me-2"></i> نقش‌های کاربری</div>
+                    <div class="section-body">
+                        <div class="row" id="roles-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade entity-modal" id="entityModal" tabindex="-1" aria-labelledby="entityModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="entityModalLabel">جزئیات موجودیت</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="entityModalBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade requirement-modal" id="requirementModal" tabindex="-1"
+        aria-labelledby="requirementModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="requirementModalLabel">جزئیات نیازمندی</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="requirementModalBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-float" id="toggle-json-input" title="ورود JSON جدید"><i class="fas fa-code"></i></button>
+    <div class="json-input-container" id="json-input-container">
+        <div class="d-flex justify-content-between mb-2">
+            <h5>ورود JSON</h5><button type="button" class="btn-close" id="close-json-input"></button>
+        </div>
+        <textarea id="jsonInput" class="form-control mb-2" rows="10"
+            placeholder="JSON پروژه جدید را اینجا وارد کنید..."></textarea>
+        <div class="d-flex justify-content-end"><button id="loadBtn" class="btn btn-primary">بارگذاری</button></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // --- NO EMBEDDED DATA ---
+        // The page starts blank and waits for user input.
+
+        let currentProjectData = null;
+        const allEntitiesMap = new Map();
+        const allRequirementsMap = new Map();
+
+        function renderEntities(entities, baseFields) {
+            const container = document.getElementById('entity-cards-container');
+            container.innerHTML = '';
+            allEntitiesMap.clear();
+            (entities || []).forEach(entity => {
+                allEntitiesMap.set(entity.id, entity);
+                const entityCard = document.createElement('div');
+                entityCard.className = 'col-md-3';
+                entityCard.innerHTML = `<div class="entity-card-item" data-entity-id="${entity.id}"><h6 class="mb-1">${entity.persianName}</h6><small class="text-muted">${entity.tableName}</small></div>`;
+                container.appendChild(entityCard);
+                entityCard.querySelector('.entity-card-item').addEventListener('click', function () {
+                    highlightRelatedEntities(entity.id);
+                    showEntityDetails(entity, baseFields);
+                });
+            });
+
+            const searchInput = document.getElementById('entity-search-input');
+            const clearSearchButton = document.getElementById('clear-entity-search');
+            let timeout = null;
+            searchInput.addEventListener('input', function () {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    const query = searchInput.value.toLowerCase();
+                    filterEntityCards(query);
+                    clearSearchButton.style.display = query.length > 0 ? 'inline-block' : 'none';
+                }, 300);
+            });
+            clearSearchButton.addEventListener('click', function () {
+                searchInput.value = '';
+                clearSearchButton.style.display = 'none';
+                filterEntityCards('');
+                clearEntityHighlights();
+            });
+        }
+
+        function filterEntityCards(query) {
+            document.querySelectorAll('#entity-cards-container .entity-card-item').forEach(card => {
+                const entity = allEntitiesMap.get(card.dataset.entityId);
+                const isVisible = entity.persianName.toLowerCase().includes(query) || entity.tableName.toLowerCase().includes(query);
+                card.closest('.col-md-3').style.display = isVisible ? 'block' : 'none';
+            });
+        }
+
+        function highlightRelatedEntities(selectedEntityId) {
+            clearEntityHighlights();
+            const selectedEntity = allEntitiesMap.get(selectedEntityId);
+            if (!selectedEntity) return;
+
+            document.querySelector(`.entity-card-item[data-entity-id="${selectedEntityId}"]`)?.classList.add('highlight-primary');
+
+            const relatedEntityIds = new Set();
+            (selectedEntity.foreignKeys || []).forEach(fk => relatedEntityIds.add(fk.references));
+
+            allEntitiesMap.forEach(entity => {
+                if (entity.id !== selectedEntityId && entity.foreignKeys) {
+                    entity.foreignKeys.forEach(fk => {
+                        if (fk.references === selectedEntityId) relatedEntityIds.add(entity.id);
+                    });
+                }
+            });
+
+            relatedEntityIds.forEach(id => {
+                const referencedCard = document.querySelector(`.entity-card-item[data-entity-id="${id}"]`);
+                if (referencedCard) {
+                    referencedCard.classList.add('highlight-related');
+                } else {
+                    console.log(`Referenced entity "${id}" not found in custom entities list. Highlighting skipped.`);
+                }
+            });
+        }
+
+
+        function clearEntityHighlights() {
+            document.querySelectorAll('.entity-card-item').forEach(card => {
+                card.classList.remove('highlight-primary', 'highlight-related');
+            });
+        }
+
+        function showEntityDetails(entity, baseFields) {
+            document.getElementById('entityModalLabel').textContent = `${entity.persianName} (${entity.tableName})`;
+
+            const fieldsTableBodyHtml = (entity.fields || []).map(fieldConfig => {
+                const fieldName = typeof fieldConfig === 'string' ? fieldConfig : fieldConfig.name;
+                let feature = '-';
+
+                const fk = (entity.foreignKeys || []).find(f => f.name === fieldName);
+                if (fk) {
+                    const refEntity = allEntitiesMap.get(fk.references);
+                    const refEntityName = refEntity ? refEntity.persianName : fk.references;
+                    feature = `<span class="badge bg-warning">کلید خارجی به ${refEntityName}</span>`;
+                } else if (typeof fieldConfig === 'object' && fieldConfig.isEnum) {
+                    feature = `<span class="badge bg-info">Enum: ${fieldConfig.enumName}</span><br><small class="text-muted">${fieldConfig.enumValues.join(', ')}</small>`;
+                }
+
+                return `<tr><td>${fieldName}</td><td>${feature}</td></tr>`;
+            }).join('') || '<tr><td colspan="2">فیلدی تعریف نشده است.</td></tr>';
+
+            const baseFieldsHtml = !entity.excludeBaseFields ? `<h6 class="mt-4">فیلدهای پایه:</h6><p class="small text-muted">${baseFields.join(', ')}</p>` : '';
+
+            document.getElementById('entityModalBody').innerHTML = `
+                <p>موجودیتی که در جدول <code>${entity.tableName}</code> ذخیره می‌شود.</p>
+                <h6 class="mb-3">فیلدها:</h6>
+                <table class="table table-striped table-bordered">
+                    <thead><tr><th>نام فیلد</th><th>ویژگی</th></tr></thead>
+                    <tbody>${fieldsTableBodyHtml}</tbody>
+                </table>
+                <div class="mb-3"><strong>استفاده از فیلدهای پایه:</strong> ${entity.excludeBaseFields ? '<span class="badge bg-danger">خیر</span>' : '<span class="badge bg-success">بله</span>'}</div>
+                ${baseFieldsHtml}`;
+            new bootstrap.Modal(document.getElementById('entityModal')).show();
+        }
+
+        function showRequirementDetails(requirement) {
+            document.getElementById('requirementModalLabel').textContent = requirement.name;
+
+            const actionsHtml = (requirement.actions && requirement.actions.length > 0) ? `<h6>اکشن‌ها:</h6><ul>${requirement.actions.map(a => `<li><strong>${a.name}:</strong> ${a.description}</li>`).join('')}</ul>` : '';
+            const viewsHtml = (requirement.views && requirement.views.length > 0) ? `<h6>ویوها:</h6><ul>${requirement.views.map(v => `<li><code>${v}</code></li>`).join('')}</ul>` : '';
+
+            const primaryEntity = allEntitiesMap.get(requirement.primaryEntityId);
+            const primaryEntityHtml = primaryEntity ? `<h6 class="mt-4">موجودیت اصلی:</h6><p><strong>${primaryEntity.persianName}</strong> (<code>${primaryEntity.tableName}</code>)</p>` :
+                (requirement.primaryEntityId ? `<h6 class="mt-4">موجودیت اصلی:</h6><p><strong>${requirement.primaryEntityId}</strong> (موجودیت پایه CMS)</p>` : '');
+
+            document.getElementById('requirementModalBody').innerHTML = `
+                <p class="lead">${requirement.description}</p>
+                <hr>
+                <div class="card bg-light border">
+                    <div class="card-body">
+                        <h5 class="card-title">مشخصات فنی</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6"><strong>Area:</strong> <code>${requirement.areaName || 'Root'}</code></div>
+                            <div class="col-md-6"><strong>Controller:</strong> <code>${requirement.controllerName || 'N/A'}</code></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">${actionsHtml}</div>
+                            <div class="col-md-6">${viewsHtml}</div>
+                        </div>
+                        ${primaryEntityHtml}
+                    </div>
+                </div>`;
+            new bootstrap.Modal(document.getElementById('requirementModal')).show();
+        }
+
+        function renderRoles(roles) {
+            const container = document.getElementById('roles-container');
+            container.innerHTML = '';
+
+            (roles || []).forEach(role => {
+                const requirementsList = (role.requirements || []).map(req => `
+                    <li class="requirement-item" data-req-id="${req.id}">
+                        <strong>${req.name}</strong>
+                        <div class="text-muted small">${req.areaName ? `Area: ${req.areaName}, ` : ''}Controller: ${req.controllerName || 'N/A'}</div>
+                    </li>`).join('');
+
+                const roleEl = document.createElement('div');
+                roleEl.className = 'col-12';
+                roleEl.innerHTML = `
+                    <div class="role-card">
+                        <div class="role-card-header d-flex justify-content-between">
+                            <div><i class="fas fa-user-tag me-2"></i>${role.name}</div>
+                            ${role.needsPanel ? '<span class="badge bg-success">نیاز به پنل</span>' : ''}
+                        </div>
+                        <div class="role-card-body">
+                            <h6 class="mt-2 mb-2">نیازمندی‌ها:</h6>
+                            ${requirementsList ? `<ul class="list-unstyled">${requirementsList}</ul>` : '<p class="text-muted">نیازمندی تعریف نشده است.</p>'}
+                        </div>
+                    </div>`;
+                container.appendChild(roleEl);
+
+                roleEl.querySelectorAll('.requirement-item').forEach(item => {
+                    item.addEventListener('click', () => showRequirementDetails(allRequirementsMap.get(item.dataset.reqId)));
+                });
+            });
+        }
+
+        function renderProject(data) {
+            if (!data || !data.projectInfo) {
+                alert('ساختار JSON نامعتبر است یا اطلاعات پروژه وجود ندارد.');
+                return;
+            }
+
+            // Hide empty state and show project content
+            document.getElementById('empty-state-container').style.display = 'none';
+            document.getElementById('project-content-container').style.display = 'block';
+
+            currentProjectData = data;
+            document.getElementById('project-name').textContent = data.projectInfo.name;
+            document.getElementById('overview-project-name').textContent = data.projectInfo.name;
+            document.getElementById('overview-project-description').textContent = data.projectInfo.description;
+
+            allEntitiesMap.clear();
+            allRequirementsMap.clear();
+            (data.entities || []).forEach(e => allEntitiesMap.set(e.id, e));
+            (data.userRoles || []).forEach(role => (role.requirements || []).forEach(req => allRequirementsMap.set(req.id, req)));
+
+            renderEntities(data.entities, data.baseFields);
+            renderRoles(data.userRoles);
+
+            // Go back to the first tab
+            document.querySelector('#project-nav .nav-link.active').classList.remove('active');
+            document.querySelector('#project-nav .nav-link[href="#overview"]').classList.add('active');
+            document.querySelector('.tab-pane.show.active').classList.remove('show', 'active');
+            document.querySelector('#overview').classList.add('show', 'active');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('#project-nav .nav-link').forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector('#project-nav .nav-link.active').classList.remove('active');
+                    this.classList.add('active');
+                    document.querySelector('.tab-pane.show.active').classList.remove('show', 'active');
+                    document.querySelector(this.getAttribute('href')).classList.add('show', 'active');
+                });
+            });
+
+            const jsonInputContainer = document.getElementById('json-input-container');
+            document.getElementById('toggle-json-input').addEventListener('click', () => {
+                jsonInputContainer.style.display = jsonInputContainer.style.display === 'none' ? 'block' : 'none';
+            });
+            document.getElementById('close-json-input').addEventListener('click', () => {
+                jsonInputContainer.style.display = 'none';
+            });
+            document.getElementById('loadBtn').addEventListener('click', () => {
+                try {
+                    const jsonText = document.getElementById('jsonInput').value;
+                    if (!jsonText) {
+                        alert('لطفا ابتدا JSON را وارد کنید.');
+                        return;
+                    }
+                    const newData = JSON.parse(jsonText);
+                    renderProject(newData);
+                    jsonInputContainer.style.display = 'none';
+                } catch (error) {
+                    alert('خطا در پردازش JSON: ' + error.message);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

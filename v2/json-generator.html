@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ویزارد تولید مستندات پروژه</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Vazirmatn, Tahoma, Arial, sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .wizard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, .1);
+            padding: 30px;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .step-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .step-content {
+            margin-bottom: 30px;
+        }
+
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .json-display {
+            background-color: #f7f7f7;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .progress-indicator {
+            margin-bottom: 30px;
+            height: 10px;
+            border-radius: 5px;
+        }
+
+        .progress-bar {
+            transition: width 0.6s ease;
+            border-radius: 5px;
+            background-color: #4CAF50;
+        }
+
+        .prompt-template {
+            background-color: #f0f8ff;
+            border: 1px solid #d0e3ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            font-size: 15px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #finalJsonOutput {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .btn-primary:hover {
+            background-color: #388E3C;
+            border-color: #388E3C;
+        }
+
+        .btn-secondary {
+            background-color: #607D8B;
+            border-color: #607D8B;
+        }
+
+        .btn-secondary:hover {
+            background-color: #455A64;
+            border-color: #455A64;
+        }
+
+        .btn-info {
+            background-color: #2196F3;
+            border-color: #2196F3;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background-color: #1976D2;
+            border-color: #1976D2;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #FF9800;
+            border-color: #FF9800;
+        }
+
+        .btn-warning:hover {
+            background-color: #F57C00;
+            border-color: #F57C00;
+        }
+
+        .btn-success {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .btn-success:hover {
+            background-color: #388E3C;
+            border-color: #388E3C;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+
+        .form-control:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 0.25rem rgba(76, 175, 80, 0.25);
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .step-indicator-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            position: relative;
+            color: #999;
+        }
+
+        .step-indicator-item.active {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .step-indicator-item.completed {
+            color: #4CAF50;
+        }
+
+        .step-indicator-item::after {
+            content: '';
+            position: absolute;
+            height: 3px;
+            background-color: #ddd;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            z-index: -1;
+        }
+
+        .step-indicator-item:last-child::after {
+            display: none;
+        }
+
+        .step-indicator-item.active::after,
+        .step-indicator-item.completed::after {
+            background-color: #4CAF50;
+        }
+
+        .step-indicator-item .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: white;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .step-indicator-item.active .step-icon,
+        .step-indicator-item.completed .step-icon {
+            border-color: #4CAF50;
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            padding: 15px 20px;
+            font-weight: bold;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .alert {
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .prompt-container {
+            position: relative;
+        }
+
+        @font-face {
+            font-family: Vazirmatn;
+            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container wizard-container">
+        <h1 class="text-center mb-4">ویزارد تولید مستندات پروژه</h1>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator mb-4">
+            <div class="step-indicator-item active" id="step-indicator-1">
+                <div class="step-icon"><i class="fas fa-info-circle"></i></div>
+                <div>اطلاعات پایه</div>
+            </div>
+            <div class="step-indicator-item" id="step-indicator-2">
+                <div class="step-icon"><i class="fas fa-file-alt"></i></div>
+                <div>توضیحات پروژه</div>
+            </div>
+            <div class="step-indicator-item" id="step-indicator-3">
+                <div class="step-icon"><i class="fas fa-users"></i></div>
+                <div>نقش‌های کاربری</div>
+            </div>
+            <div class="step-indicator-item" id="step-indicator-4">
+                <div class="step-icon"><i class="fas fa-list-check"></i></div>
+                <div>نیازمندی‌های اولیه</div>
+            </div>
+            <div class="step-indicator-item" id="step-indicator-5">
+                <div class="step-icon"><i class="fas fa-database"></i></div>
+                <div>موجودیت‌ها</div>
+            </div>
+            <div class="step-indicator-item" id="step-indicator-6">
+                <div class="step-icon"><i class="fas fa-tasks"></i></div>
+                <div>تکمیل نیازمندی‌ها</div>
+            </div>
+            <div class="step-indicator-item" id="step-indicator-7">
+                <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                <div>نتیجه نهایی</div>
+            </div>
+        </div>
+
+        <div class="progress progress-indicator">
+            <div id="progress-bar" class="progress-bar" role="progressbar" style="width:0%" aria-valuenow="0"
+                aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        <div id="step1" class="step active">
+            <div class="step-header">
+                <h3><i class="fas fa-info-circle me-2"></i>مرحله 1: اطلاعات پایه پروژه</h3>
+                <p class="text-muted">لطفاً اطلاعات پایه پروژه جدید را وارد کنید.</p>
+            </div>
+            <div class="step-content">
+                <div class="card">
+                    <div class="card-body">
+                        <form id="projectInfoForm">
+                            <div class="mb-4">
+                                <label for="projectName" class="form-label">نام پروژه</label>
+                                <input type="text" class="form-control" id="projectName"
+                                    placeholder="مثال: سیستم مدیریت فروشگاه آنلاین" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="projectDescription" class="form-label">توضیحات پروژه</label>
+                                <textarea class="form-control" id="projectDescription" rows="5"
+                                    placeholder="توضیحات کلی پروژه، تکنولوژی‌های مورد استفاده و هدف آن را وارد کنید..."
+                                    required></textarea>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <div></div>
+                <button id="nextToStep2" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>مرحله بعد
+                </button>
+            </div>
+        </div>
+
+        <div id="step2" class="step">
+            <div class="step-header">
+                <h3><i class="fas fa-file-alt me-2"></i>مرحله 2: تولید اطلاعات پایه پروژه</h3>
+                <p class="text-muted">متن پرامپت زیر را کپی کرده و به مدل زبانی بدهید، سپس پاسخ را در فیلد زیر وارد
+                    کنید.</p>
+            </div>
+            <div class="step-content">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-robot me-2"></i>پرامپت برای مدل زبانی
+                    </div>
+                    <div class="card-body prompt-container">
+                        <div class="prompt-template" id="projectInfoPrompt"></div>
+                        <button class="copy-btn" id="copyProjectInfoPrompt">
+                            <i class="fas fa-copy me-1"></i>کپی پرامپت
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-reply me-2"></i>پاسخ مدل زبانی
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <textarea class="form-control" id="projectInfoResponse" rows="10"
+                                placeholder="پاسخ دریافتی از مدل زبانی را اینجا وارد کنید..." required></textarea>
+                        </div>
+                        <button id="validateProjectInfo" class="btn btn-info">
+                            <i class="fas fa-check-circle me-2"></i>اعتبارسنجی JSON
+                        </button>
+                        <div id="projectInfoValidation" class="json-display mt-3" style="display:none"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <button id="backToStep1" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>مرحله قبل
+                </button>
+                <button id="nextToStep3" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>مرحله بعد
+                </button>
+            </div>
+        </div>
+
+        <div id="step3" class="step">
+            <div class="step-header">
+                <h3><i class="fas fa-users me-2"></i>مرحله 3: تولید نقش‌های کاربری (User Roles)</h3>
+                <p class="text-muted">متن پرامپت زیر را کپی کرده و به مدل زبانی بدهید، سپس پاسخ را در فیلد زیر وارد
+                    کنید.</p>
+            </div>
+            <div class="step-content">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-robot me-2"></i>پرامپت برای مدل زبانی
+                    </div>
+                    <div class="card-body prompt-container">
+                        <div class="prompt-template" id="userRolesPrompt"></div>
+                        <button class="copy-btn" id="copyUserRolesPrompt">
+                            <i class="fas fa-copy me-1"></i>کپی پرامپت
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-reply me-2"></i>پاسخ مدل زبانی
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i><strong>توجه:</strong> در این مرحله فقط نقش‌های
+                            کاربری بدون نیازمندی‌ها تعریف می‌شوند. می‌توانید نقش‌ها را بررسی و ویرایش کنید.
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="userRolesResponse" rows="10"
+                                placeholder="پاسخ دریافتی از مدل زبانی را اینجا وارد کنید..." required></textarea>
+                        </div>
+                        <button id="validateUserRoles" class="btn btn-info">
+                            <i class="fas fa-check-circle me-2"></i>اعتبارسنجی JSON
+                        </button>
+                        <div id="userRolesValidation" class="json-display mt-3" style="display:none"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <button id="backToStep2" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>مرحله قبل
+                </button>
+                <button id="nextToStep4" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>مرحله بعد
+                </button>
+            </div>
+        </div>
+
+        <div id="step4" class="step">
+            <div class="step-header">
+                <h3><i class="fas fa-list-check me-2"></i>مرحله 4: تعریف نیازمندی‌های اولیه برای نقش: <strong
+                        id="currentRoleName" class="text-primary"></strong></h3>
+                <p class="text-muted">
+                    برای هر نقش کاربری، نیازمندی‌ها را به صورت جداگانه تولید کنید.
+                    (نقش <span id="currentRoleIndexDisplay"></span> از <span id="totalRoles"></span>)
+                </p>
+            </div>
+            <div class="step-content">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-robot me-2"></i>پرامپت برای مدل زبانی (نقش فعلی)
+                    </div>
+                    <div class="card-body prompt-container">
+                        <div class="prompt-template" id="basicRequirementsPrompt"></div>
+                        <button class="copy-btn" id="copyBasicRequirementsPrompt">
+                            <i class="fas fa-copy me-1"></i>کپی پرامپت
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-reply me-2"></i>پاسخ مدل زبانی
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i><strong>توجه:</strong> در این مرحله نیازمندی‌ها را به
+                            صورت دقیق و شکسته شده وارد کنید. جزئیات فنی بعداً تکمیل خواهند شد.
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="basicRequirementsResponse" rows="10"
+                                placeholder="پاسخ دریافتی از مدل زبانی (فقط برای نقش فعلی) را اینجا وارد کنید..."
+                                required></textarea>
+                        </div>
+                        <button id="validateBasicRequirements" class="btn btn-info">
+                            <i class="fas fa-check-circle me-2"></i>اعتبارسنجی JSON
+                        </button>
+                        <div id="basicRequirementsValidation" class="json-display mt-3" style="display:none"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <button id="backToStep3" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>مرحله قبل
+                </button>
+                <button id="processRoleRequirements" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>ذخیره و ادامه به نقش بعدی
+                </button>
+            </div>
+        </div>
+
+        <div id="step5" class="step">
+            <div class="step-header">
+                <h3><i class="fas fa-database me-2"></i>مرحله 5: تولید موجودیت‌ها (Entities)</h3>
+                <p class="text-muted">متن پرامپت زیر را کپی کرده و به مدل زبانی بدهید، سپس پاسخ را در فیلد زیر وارد
+                    کنید.</p>
+            </div>
+            <div class="step-content">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-robot me-2"></i>پرامپت برای مدل زبانی
+                    </div>
+                    <div class="card-body prompt-container">
+                        <div class="prompt-template" id="entitiesPrompt"></div>
+                        <button class="copy-btn" id="copyEntitiesPrompt">
+                            <i class="fas fa-copy me-1"></i>کپی پرامپت
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-reply me-2"></i>پاسخ مدل زبانی
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <textarea class="form-control" id="entitiesResponse" rows="10"
+                                placeholder="پاسخ دریافتی از مدل زبانی را اینجا وارد کنید..." required></textarea>
+                        </div>
+                        <button id="validateEntities" class="btn btn-info">
+                            <i class="fas fa-check-circle me-2"></i>اعتبارسنجی JSON
+                        </button>
+                        <div id="entitiesValidation" class="json-display mt-3" style="display:none"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <button id="backToStep4" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>مرحله قبل
+                </button>
+                <button id="nextToStep6" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>مرحله بعد
+                </button>
+            </div>
+        </div>
+
+        <!-- NEW AND IMPROVED STEP 6 -->
+        <div id="step6" class="step">
+            <div class="step-header">
+                <h3><i class="fas fa-tasks me-2"></i>مرحله 6: تکمیل نیازمندی‌های فنی برای نقش: <strong
+                        id="currentRoleNameForStep6" class="text-primary"></strong></h3>
+                <p class="text-muted">
+                    برای هر نقش، جزئیات فنی نیازمندی‌ها را تولید کنید.
+                    (نقش <span id="currentRoleIndexForStep6Display"></span> از <span id="totalRolesForStep6"></span>)
+                </p>
+            </div>
+            <div class="step-content">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-robot me-2"></i>پرامپت برای مدل زبانی (نقش فعلی)
+                    </div>
+                    <div class="card-body prompt-container">
+                        <div class="prompt-template" id="completeRequirementsPrompt"></div>
+                        <button class="copy-btn" id="copyCompleteRequirementsPrompt">
+                            <i class="fas fa-copy me-1"></i>کپی پرامپت
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-reply me-2"></i>پاسخ مدل زبانی
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i><strong>توجه:</strong> پاسخ باید <strong>فقط یک آرایه
+                                JSON</strong>
+                            از نیازمندی‌های تکمیل شده برای نقش فعلی باشد. مدل نباید ساختار اولیه نیازمندی‌ها را تغییر
+                            دهد.
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="completeRequirementsResponse" rows="10"
+                                placeholder="پاسخ دریافتی از مدل زبانی (فقط برای نقش فعلی) را اینجا وارد کنید..."
+                                required></textarea>
+                        </div>
+                        <button id="validateCompleteRequirements" class="btn btn-info">
+                            <i class="fas fa-check-circle me-2"></i>اعتبارسنجی JSON
+                        </button>
+                        <div id="completeRequirementsValidation" class="json-display mt-3" style="display:none"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <button id="backToStep5" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>مرحله قبل
+                </button>
+                <button id="processTechnicalDetails" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>ذخیره و ادامه به نقش بعدی
+                </button>
+            </div>
+        </div>
+
+        <div id="step7" class="step">
+            <div class="step-header">
+                <h3><i class="fas fa-check-circle me-2"></i>مرحله 7: نتیجه نهایی</h3>
+                <p class="text-muted">JSON نهایی پروژه شما آماده شده است.</p>
+            </div>
+            <div class="step-content">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-code me-2"></i>خروجی نهایی JSON
+                    </div>
+                    <div class="card-body">
+                        <div id="finalJsonOutput" class="json-display mb-3"></div>
+                        <div class="d-flex gap-2">
+                            <button id="copyFinalJson" class="btn btn-success">
+                                <i class="fas fa-copy me-2"></i>کپی JSON
+                            </button>
+                            <button id="downloadFinalJson" class="btn btn-primary">
+                                <i class="fas fa-download me-2"></i>دانلود فایل JSON
+                            </button>
+                            <button id="prettifyJson" class="btn btn-info">
+                                <i class="fas fa-indent me-2"></i>زیباسازی JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-navigation">
+                <button id="backToStep6" class="btn btn-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>مرحله قبل
+                </button>
+                <button id="startOver" class="btn btn-warning">
+                    <i class="fas fa-redo me-2"></i>شروع مجدد
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let projectJson = {};
+        let currentStep = 1;
+        let currentRoleIndex = 0; // برای ردیابی نقش فعلی در مرحله 4
+        let currentRoleIndexForStep6 = 0; // برای ردیابی نقش فعلی در مرحله 6
+
+        const totalSteps = 7;
+        const baseCmsJson = {
+            baseFields: [
+                "id",
+                "createdDate",
+                "createdBy",
+                "createdIp",
+                "updatedDate",
+                "updatedBy",
+                "updatedIp",
+                "isDeleted",
+                "deletedDate",
+                "deletedBy",
+                "deletedIp"
+            ],
+            projectInfo: {
+                name: "سیستم مدیریت محتوای عطفینو (Atfino CMS 3)",
+                description: "یک سیستم مدیریت محتوای اختصاصی (CMS) توسعه یافته با ASP.NET MVC 5 و Entity Framework، شامل پنل مدیریت برای مدیریت مطالب، دسته‌بندی‌ها، رسانه‌ها، منوها، کاربران و تنظیمات سایت. این CMS زیرساخت‌های پایه مانند احراز هویت و مدیریت فایل را از طریق سرویس‌های داخلی خود فراهم می‌کند."
+            },
+            entities: [],
+            userRoles: []
+        };
+
+        function showStep(stepNumber) {
+            document.querySelectorAll(".step").forEach(step => {
+                step.classList.remove("active");
+            });
+            document.getElementById(`step${stepNumber}`).classList.add("active");
+            const progress = ((stepNumber - 1) / (totalSteps - 1)) * 100;
+            document.getElementById("progress-bar").style.width = `${progress}%`;
+            document.getElementById("progress-bar").setAttribute("aria-valuenow", progress);
+            document.querySelectorAll(".step-indicator-item").forEach((item, index) => {
+                const itemNumber = index + 1;
+                item.classList.remove("active", "completed");
+                if (itemNumber === stepNumber) {
+                    item.classList.add("active");
+                } else if (itemNumber < stepNumber) {
+                    item.classList.add("completed");
+                }
+            });
+            currentStep = stepNumber;
+        }
+
+        function isValidJSON(text) {
+            try {
+                JSON.parse(text);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function formatPrompt(text) {
+            return text.replace(/\n\s*\n/g, '\n\n').trim();
+        }
+
+        function generateProjectInfoPrompt() {
+            const projectName = document.getElementById("projectName").value;
+            const projectDescription = document.getElementById("projectDescription").value;
+            return formatPrompt(`تو یک متخصص تحلیل سیستم و مدیر پروژه با تجربه عمیق در طراحی سیستم‌های نرم‌افزاری و مستندسازی پروژه‌ها هستی. 
+
+اطلاعات پروژه:
+نام: "${projectName}"
+توضیحات: "${projectDescription}"
+
+توضیحات پروژه را به صورت خلاصه و کلی بنویس - از نوشتن توضیحات بسیار طولانی و جزئی خودداری کن. هدف اصلی، تکنولوژی استفاده شده(ASP.NET MVC 5) و کاربرد کلی سیستم را مشخص کن.
+
+فقط بخش "projectInfo" را در قالب JSON تولید کن، بدون هیچ توضیح اضافی یا کد‌های اضافه. فقط یک آبجکت JSON حاوی دو فیلد "name" و "description".
+
+پاسخ باید دقیقاً به این شکل باشد (با جایگزینی مقادیر واقعی):
+
+{
+ "name": "نام پروژه",
+ "description": "توضیحات کامل پروژه که شامل تکنولوژی‌ها، هدف و قابلیت‌های کلیدی آن است..."
+}`);
+        }
+
+        function generateUserRolesPrompt() {
+            return formatPrompt(`تو یک متخصص تحلیل سیستم و مدیر پروژه با تجربه عمیق در طراحی سیستم‌های نرم‌افزاری و مستندسازی پروژه‌ها هستی. 
+
+اطلاعات پروژه:
+${JSON.stringify(projectJson.projectInfo, null, 2)}
+
+مهم: توضیحات پروژه فقط شامل اطلاعات اولیه و کلی است. لطفاً فراتر از این توضیحات فکر کن و تمام نقش‌های کاربری منطقی و ضروری را که یک سیستم کامل در این حوزه باید داشته باشد در نظر بگیر.
+
+با توجه به اطلاعات پروژه بالا، لطفاً آرایه "userRoles" جدیدی برای پروژه طراحی کن. این آرایه باید شامل تمام نقش‌های کاربری مورد نیاز برای پروژه باشد.
+
+در این مرحله فقط نام نقش‌های کاربری را تعریف کن و از ارائه توضیحات مفصل خودداری کن. هر نقش کاربری باید شامل این فیلدها باشد:
+- "id": شناسه یکتا با پیشوند "role-" (مثلاً "role-manager")
+- "name": نام فارسی نقش (مثلاً "مدیر فروش")
+- "needsPanel": بولین که مشخص می‌کند آیا این نقش نیاز به پنل و داشبورد کاربری اختصاصی دارد یا خیر
+
+نقش‌های کاربری باید متناسب با نیازهای واقعی و کامل پروژه باشند و تمام نقش‌های مورد نیاز را پوشش دهند. از افزودن هرگونه توضیحات اضافی در فیلدهای دیگر خودداری کن.
+
+فقط آرایه "userRoles" را در قالب JSON تولید کن، بدون هیچ توضیح اضافی یا کد‌های اضافه.
+
+مثال ساختاری (با جزئیات کامل پر کن):
+
+[
+ {
+ "id": "role-admin",
+ "name": "مدیر سیستم",
+ "needsPanel": true
+ },
+...
+]`);
+        }
+
+        function generateBasicRequirementsPrompt(role) {
+            const allRolesContext = projectJson.userRoles.map(r => `- ${r.name}`).join('\n');
+            return formatPrompt(`تو یک تحلیلگر ارشد سیستم و معمار نرم‌افزار هستی. تخصص تو در تبدیل ایده‌های کلی به نیازمندی‌های دقیق، اتمیک و قابل پیاده‌سازی برای تیم توسعه است.
+
+اطلاعات کلی پروژه:
+${JSON.stringify(projectJson.projectInfo, null, 2)}
+
+نقش کاربری مورد بررسی:
+نام نقش: "${role.name}"
+
+تمام نقش‌های موجود در سیستم:
+${allRolesContext}
+
+**وظیفه اصلی شما:**
+برای نقش **"${role.name}"**، لیستی از نیازمندی‌ها (Requirements) را استخراج کن. این نیازمندی‌ها باید بسیار دقیق، جزئی و قابل اقدام باشند.
+
+**دستورالعمل‌های کلیدی برای تولید خروجی:**
+1.  **شکستن نیازمندی‌های بزرگ (Decomposition):** از ارائه نیازمندی‌های کلی مانند "مدیریت کاربران" یا "مدیریت محصولات" به شدت **خودداری کن**. به جای آن، این مفاهیم بزرگ را به کوچکترین عملیات ممکن بشکن. برای مثال، به جای "مدیریت محصولات"، نیازمندی‌های جداگانه‌ای مانند "افزودن محصول جدید"، "ویرایش اطلاعات محصول"، "مشاهده لیست محصولات با فیلتر"، "حذف موقت محصول" و "جستجوی پیشرفته محصولات" را تعریف کن.
+2.  **تعریف منطق کسب‌وکار اولیه (Business Logic):** برای هر نیازمندی، در فیلد \`description\`، فقط به یک توضیح ساده اکتفا نکن. یک سناریوی کوتاه و یک منطق کسب‌وکار اولیه را شرح بده. مثلاً برای "لغو نوبت توسط بیمار"، توضیح بده که "بیمار می‌تواند تا ۲۴ ساعت قبل از زمان نوبت، آن را لغو کند. در صورت لغو، وضعیت نوبت به 'لغو شده توسط بیمار' تغییر کرده و یک نوتیفیکیشن برای منشی ارسال می‌شود."
+3.  **پوشش کامل (Comprehensive Coverage):** تمام جنبه‌های کاری این نقش را در نظر بگیر. این شامل موارد زیر است:
+    *   **عملیات اصلی (CRUD):** تمام عملیات ایجاد، خواندن، به‌روزرسانی و حذف.
+    *   **گزارش‌گیری:** چه گزارش‌هایی برای این نقش حیاتی است؟ (مثال: گزارش فروش روزانه)
+    *   **داشبورد:** این کاربر در صفحه اصلی پنل خود چه اطلاعاتی را باید به سرعت ببیند؟
+    *   **تنظیمات شخصی:** مدیریت پروفایل، تغییر رمز عبور، تنظیمات اعلان‌ها.
+    *   **جستجو و فیلتر:** قابلیت‌های جستجو و فیلتر برای لیست‌ها.
+    *   **عملیات جانبی:** مانند خروجی اکسل، چاپ، ارسال پیام و...
+
+4.  **ساختار خروجی:** خروجی باید **فقط یک آرایه JSON** باشد. هر آبجکت در آرایه باید شامل فیلدهای زیر باشد:
+    *   \`"id"\`: یک شناسه منحصر به فرد با پیشوند "req-" (مثال: "req-product-add")
+    *   \`"name"\`: عنوان کوتاه و واضح نیازمندی (مثال: "افزودن محصول جدید")
+    *   \`"description"\`: شرح کامل نیازمندی به همراه سناریو و منطق کسب‌وکار اولیه.
+
+**مهم:** در پاسخ خود هیچ متن اضافی، توضیح یا کد دیگری قرار نده. فقط و فقط آرایه JSON را برگردان.
+
+مثال ساختار خروجی (با توجه به نقش "${role.name}" این ساختار را با جزئیات کامل و واقعی پر کن):
+[
+  {
+    "id": "req-appointment-create",
+    "name": "ثبت نوبت جدید برای بیمار",
+    "description": "کاربر (منشی) باید بتواند با جستجوی بیمار بر اساس کد ملی یا شماره پرونده، یک نوبت جدید برای او ثبت کند. در هنگام ثبت، باید امکان انتخاب پزشک، تاریخ و ساعت از بین زمان‌های خالی وجود داشته باشد. پس از ثبت، یک پیامک تایید برای بیمار ارسال می‌شود."
+  },
+  {
+    "id": "req-appointment-cancel",
+    "name": "لغو نوبت توسط منشی",
+    "description": "منشی می‌تواند یک نوبت را لغو کند. هنگام لغو، باید دلیل آن (مثلاً به درخواست بیمار یا عدم حضور پزشک) ثبت شود. با لغو نوبت، زمان آن برای سایر بیماران آزاد شده و پیامک اطلاع‌رسانی برای بیمار ارسال می‌گردد."
+  }
+]
+`);
+        }
+
+        function setupStep4ForRole(roleIndex) {
+            const totalRolesCount = projectJson.userRoles.length;
+            if (roleIndex >= totalRolesCount) {
+                const prompt = generateEntitiesPrompt();
+                document.getElementById("entitiesPrompt").textContent = prompt;
+                showStep(5);
+                return;
+            }
+            const role = projectJson.userRoles[roleIndex];
+            document.getElementById("currentRoleName").textContent = role.name;
+            document.getElementById("currentRoleIndexDisplay").textContent = roleIndex + 1;
+            document.getElementById("totalRoles").textContent = totalRolesCount;
+            const prompt = generateBasicRequirementsPrompt(role);
+            document.getElementById("basicRequirementsPrompt").textContent = prompt;
+            document.getElementById("basicRequirementsResponse").value = "";
+            document.getElementById("basicRequirementsValidation").style.display = "none";
+            const nextButton = document.getElementById("processRoleRequirements");
+            if (roleIndex === totalRolesCount - 1) {
+                nextButton.innerHTML = '<i class="fas fa-check-circle me-2"></i>تکمیل و رفتن به مرحله بعد';
+            } else {
+                nextButton.innerHTML = '<i class="fas fa-save me-2"></i>ذخیره و ادامه به نقش بعدی';
+            }
+        }
+
+        function generateEntitiesPrompt() {
+            return formatPrompt(`تو یک متخصص تحلیل سیستم و مدیر پروژه با تجربه عمیق در طراحی سیستم‌های نرم‌افزاری و مستندسازی پروژه‌ها هستی. 
+
+اطلاعات پروژه:
+${JSON.stringify(projectJson.projectInfo, null, 2)}
+
+نقش‌های کاربری و نیازمندی‌های اولیه:
+${JSON.stringify(projectJson.userRoles, null, 2)}
+
+Atfino CMS دارای موجودیت‌های پایه زیر است که نباید دوباره تعریف شوند:
+- Users (کاربران): برای مدیریت کاربران سیستم
+- Roles (نقش‌ها): برای مدیریت نقش‌های کاربری
+- Permissions (مجوزها): برای مدیریت دسترسی‌ها
+- Categories (دسته‌بندی‌ها): برای مدیریت دسته‌بندی‌های محتوا
+- Posts (پست‌ها): برای مدیریت محتوای اصلی
+- Media (رسانه‌ها): برای مدیریت فایل‌ها و تصاویر
+- Comments (نظرات): برای مدیریت نظرات کاربران
+- Settings (تنظیمات): برای تنظیمات سیستم
+- Menus (منوها): برای مدیریت منوهای سایت
+- Pages (صفحات): برای مدیریت صفحات استاتیک
+
+با توجه به نیازمندی‌های اولیه تعریف شده، لطفاً آرایه "entities" جدیدی برای پروژه طراحی کن. این آرایه باید شامل تمام موجودیت‌های جدید مورد نیاز برای پروژه باشد (موجودیت‌های پایه Atfino CMS را دوباره تعریف نکن).
+
+هر موجودیت باید شامل این فیلدها باشد:
+- "id": شناسه یکتا با پیشوند "ent-" (مثلاً "ent-product")
+- "tableName": نام جدول در دیتابیس با حرف اول بزرگ و به صورت جمع (مثلاً "Products")
+- "persianName": نام فارسی موجودیت به صورت جمع (مثلاً "محصولات")
+- "fields": آرایه‌ای از فیلدهای موجودیت که می‌تواند شامل موارد زیر باشد:
+ - رشته‌های ساده برای فیلدهای معمولی (مثلاً "name")
+ - آبجکت‌ها برای فیلدهای پیچیده‌تر:
+ - فیلدهای enum: {"name": "status", "isEnum": true, "enumName": "StatusType", "enumValues": ["Active", "Inactive", "Pending"]}
+- "foreignKeys": آرایه‌ای از کلیدهای خارجی (هر کدام شامل "name" و "references")
+- "excludeBaseFields": بولین که مشخص می‌کند آیا فیلدهای پایه (مثل id، createdDate و...) را شامل می‌شود یا خیر (معمولاً false)
+
+موجودیت‌ها باید کامل و دقیق باشند و تمام فیلدهای مورد نیاز را پوشش دهند. برای هر موجودیت، حداقل 5 تا 15 فیلد مناسب طراحی کن. برای enum ها، مقادیر واقعی و منطقی انتخاب کن.
+
+فقط آرایه "entities" را در قالب JSON تولید کن، بدون هیچ توضیح اضافی یا کد‌های اضافه:
+
+[
+ {
+ "id": "ent-example",
+ "tableName": "Examples",
+ "persianName": "نمونه‌ها",
+ "fields": [
+ "name",
+ "description",
+ {"name": "type", "isEnum": true, "enumName": "ExampleType", "enumValues": ["Type1", "Type2"]}
+ ],
+ "foreignKeys": [{"name": "relatedEntityId", "references": "ent-another-entity"}],
+ "excludeBaseFields": false
+ }
+]`);
+        }
+
+        // NEW IMPROVED FUNCTION FOR STEP 6
+        function generateTechnicalDetailsPrompt(role) {
+            const requirementsToComplete = role.requirements;
+
+            return formatPrompt(`تو یک معمار ارشد نرم‌افزار با تخصص در معماری ASP.NET MVC 5 هستی. وظیفه تو تبدیل نیازمندی‌های کسب‌وکار به مشخصات فنی دقیق برای تیم توسعه است.
+
+**اطلاعات کلی پروژه:**
+${JSON.stringify(projectJson.projectInfo, null, 2)}
+
+**موجودیت‌های تعریف شده در پروژه:**
+${JSON.stringify(projectJson.entities, null, 2)}
+
+**نقش کاربری مورد بررسی:**
+نام نقش: "${role.name}"
+
+**نیازمندی‌های اولیه این نقش که باید تکمیل شوند:**
+${JSON.stringify(requirementsToComplete, null, 2)}
+
+**وظیفه اصلی شما:**
+برای **هر آبجکت** در آرایه نیازمندی‌های بالا، فیلدهای فنی زیر را بر اساس اصول معماری MVC و با توجه به موجودیت‌های پروژه اضافه کن:
+
+1.  **"areaName"**: نام Area در ASP.NET MVC. اگر نیازمندی به پنل مدیریت تعلق دارد (مثلاً "AdminPanel") از نام آن استفاده کن. در غیر این صورت، \`null\` قرار بده.
+2.  **"controllerName"**: نام کنترلر مرتبط (بدون پسوند Controller). مثلاً "Products" یا "Orders".
+3.  **"actions"**: آرایه‌ای از آبجکت‌های اکشن. هر اکشن شامل \`"name"\` (مثلاً "Index", "Create", "EditById") و \`"description"\` (توضیح کوتاه کاری که اکشن انجام می‌دهد) باشد.
+4.  **"views"**: آرایه‌ای از نام فایل‌های View مرتبط (مثلاً "Index.cshtml", "Upsert.cshtml").
+5.  **"primaryEntityId"**: شناسه (id) موجودیت اصلی که این نیازمندی با آن در ارتباط است (از لیست موجودیت‌های ارائه شده). اگر به موجودیت خاصی مرتبط نیست، \`null\` قرار بده.
+
+**قوانین بسیار مهم:**
+- **ساختار اصلی را حفظ کن:** به هیچ وجه فیلدهای موجود \`id\`, \`name\` و \`description\` را تغییر نده. فقط فیلدهای فنی جدید را به هر آبجکت اضافه کن.
+- **خروجی دقیق:** خروجی باید **فقط و فقط یک آرایه JSON** باشد که همان آرایه نیازمندی‌های ورودی است، اما حالا با فیلدهای فنی تکمیل شده. هیچ متن یا توضیح اضافی در پاسخ خود قرار نده.
+
+مثال ساختار خروجی برای یک نیازمندی:
+{
+  "id": "req-product-add",
+  "name": "افزودن محصول جدید",
+  "description": "مدیر باید بتواند محصول جدیدی با مشخصات کامل (نام، قیمت، موجودی، دسته‌بندی و...) به سیستم اضافه کند.",
+  "areaName": "AdminPanel",
+  "controllerName": "Products",
+  "actions": [
+    { "name": "Upsert", "description": "نمایش فرم ایجاد محصول جدید" },
+    { "name": "Upsert", "description": "ذخیره اطلاعات محصول جدید ارسال شده از فرم" }
+  ],
+  "views": ["Upsert.cshtml"],
+  "primaryEntityId": "ent-product"
+}
+`);
+        }
+
+        // NEW FUNCTION TO MANAGE STEP 6 LOOP
+        function setupStep6ForRole(roleIndex) {
+            const totalRolesCount = projectJson.userRoles.length;
+            if (roleIndex >= totalRolesCount) {
+                // اگر تمام نقش‌ها پردازش شدند، به مرحله نهایی برو
+                const finalJson = {
+                    baseFields: baseCmsJson.baseFields,
+                    projectInfo: projectJson.projectInfo,
+                    entities: projectJson.entities,
+                    userRoles: projectJson.userRoles
+                };
+                document.getElementById("finalJsonOutput").textContent = formatJSON(JSON.stringify(finalJson));
+                showStep(7);
+                return;
+            }
+
+            const role = projectJson.userRoles[roleIndex];
+            document.getElementById("currentRoleNameForStep6").textContent = role.name;
+            document.getElementById("currentRoleIndexForStep6Display").textContent = roleIndex + 1;
+            document.getElementById("totalRolesForStep6").textContent = totalRolesCount;
+
+            const prompt = generateTechnicalDetailsPrompt(role);
+            document.getElementById("completeRequirementsPrompt").textContent = prompt;
+            document.getElementById("completeRequirementsResponse").value = "";
+            document.getElementById("completeRequirementsValidation").style.display = "none";
+
+            const nextButton = document.getElementById("processTechnicalDetails");
+            if (roleIndex === totalRolesCount - 1) {
+                nextButton.innerHTML = '<i class="fas fa-check-circle me-2"></i>تکمیل و رفتن به نتیجه نهایی';
+            } else {
+                nextButton.innerHTML = '<i class="fas fa-save me-2"></i>ذخیره و ادامه به نقش بعدی';
+            }
+        }
+
+        function setupCopyButtons() {
+            document.getElementById("copyProjectInfoPrompt").addEventListener("click", function () {
+                navigator.clipboard.writeText(document.getElementById("projectInfoPrompt").textContent).then(() => showToast("پرامپت با موفقیت کپی شد!"));
+            });
+            document.getElementById("copyUserRolesPrompt").addEventListener("click", function () {
+                navigator.clipboard.writeText(document.getElementById("userRolesPrompt").textContent).then(() => showToast("پرامپت با موفقیت کپی شد!"));
+            });
+            document.getElementById("copyBasicRequirementsPrompt").addEventListener("click", function () {
+                navigator.clipboard.writeText(document.getElementById("basicRequirementsPrompt").textContent).then(() => showToast("پرامپت با موفقیت کپی شد!"));
+            });
+            document.getElementById("copyEntitiesPrompt").addEventListener("click", function () {
+                navigator.clipboard.writeText(document.getElementById("entitiesPrompt").textContent).then(() => showToast("پرامپت با موفقیت کپی شد!"));
+            });
+            document.getElementById("copyCompleteRequirementsPrompt").addEventListener("click", function () {
+                navigator.clipboard.writeText(document.getElementById("completeRequirementsPrompt").textContent).then(() => showToast("پرامپت با موفقیت کپی شد!"));
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement("div");
+            toast.className = "position-fixed bottom-0 end-0 p-3";
+            toast.style.zIndex = "11";
+            toast.innerHTML = `<div class="toast show" role="alert" aria-live="assertive" aria-atomic="true"><div class="toast-header"><strong class="me-auto">پیام سیستم</strong><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button></div><div class="toast-body">${message}</div></div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3000);
+        }
+
+        function formatJSON(jsonString) {
+            try { return JSON.stringify(JSON.parse(jsonString), null, 2); } catch (e) { return jsonString; }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            setupCopyButtons();
+
+            document.getElementById("nextToStep2").addEventListener("click", function () {
+                if (document.getElementById("projectInfoForm").checkValidity()) {
+                    document.getElementById("projectInfoPrompt").textContent = generateProjectInfoPrompt();
+                    showStep(2);
+                } else { alert("لطفاً تمام فیلدها را پر کنید."); }
+            });
+
+            document.getElementById("backToStep1").addEventListener("click", () => showStep(1));
+
+            document.getElementById("validateProjectInfo").addEventListener("click", function () {
+                const jsonText = document.getElementById("projectInfoResponse").value;
+                const validationDiv = document.getElementById("projectInfoValidation");
+                if (isValidJSON(jsonText)) {
+                    try {
+                        const jsonObj = JSON.parse(jsonText);
+                        if (jsonObj.name && jsonObj.description) {
+                            validationDiv.textContent = formatJSON(jsonText);
+                            validationDiv.style.color = "green";
+                        } else {
+                            validationDiv.textContent = 'JSON معتبر است اما باید شامل فیلدهای name و description باشد.';
+                            validationDiv.style.color = "orange";
+                        }
+                    } catch (e) {
+                        validationDiv.textContent = "خطا در پارس کردن JSON: " + e.message;
+                        validationDiv.style.color = "red";
+                    }
+                } else {
+                    validationDiv.textContent = "متن وارد شده یک JSON معتبر نیست.";
+                    validationDiv.style.color = "red";
+                }
+                validationDiv.style.display = "block";
+            });
+
+            document.getElementById("nextToStep3").addEventListener("click", function () {
+                const jsonText = document.getElementById("projectInfoResponse").value;
+                if (isValidJSON(jsonText)) {
+                    try {
+                        const jsonObj = JSON.parse(jsonText);
+                        if (jsonObj.name && jsonObj.description) {
+                            projectJson.projectInfo = jsonObj;
+                            document.getElementById("userRolesPrompt").textContent = generateUserRolesPrompt();
+                            showStep(3);
+                        } else { alert('JSON باید شامل فیلدهای name و description باشد.'); }
+                    } catch (e) { alert("خطا در پارس کردن JSON: " + e.message); }
+                } else { alert("لطفاً یک JSON معتبر وارد کنید."); }
+            });
+
+            document.getElementById("backToStep2").addEventListener("click", () => showStep(2));
+
+            document.getElementById("validateUserRoles").addEventListener("click", function () {
+                const jsonText = document.getElementById("userRolesResponse").value;
+                const validationDiv = document.getElementById("userRolesValidation");
+                if (isValidJSON(jsonText)) {
+                    try {
+                        if (Array.isArray(JSON.parse(jsonText))) {
+                            validationDiv.textContent = formatJSON(jsonText);
+                            validationDiv.style.color = "green";
+                        } else {
+                            validationDiv.textContent = "JSON معتبر است اما باید یک آرایه باشد.";
+                            validationDiv.style.color = "orange";
+                        }
+                    } catch (e) {
+                        validationDiv.textContent = "خطا در پارس کردن JSON: " + e.message;
+                        validationDiv.style.color = "red";
+                    }
+                } else {
+                    validationDiv.textContent = "متن وارد شده یک JSON معتبر نیست.";
+                    validationDiv.style.color = "red";
+                }
+                validationDiv.style.display = "block";
+            });
+
+            document.getElementById("nextToStep4").addEventListener("click", function () {
+                const jsonText = document.getElementById("userRolesResponse").value;
+                if (isValidJSON(jsonText)) {
+                    try {
+                        const jsonObj = JSON.parse(jsonText);
+                        if (Array.isArray(jsonObj)) {
+                            projectJson.userRoles = jsonObj.map(role => ({ ...role, requirements: [] }));
+                            currentRoleIndex = 0;
+                            setupStep4ForRole(currentRoleIndex);
+                            showStep(4);
+                        } else { alert("JSON باید یک آرایه باشد."); }
+                    } catch (e) { alert("خطا در پارس کردن JSON: " + e.message); }
+                } else { alert("لطفاً یک JSON معتبر وارد کنید."); }
+            });
+
+            document.getElementById("backToStep3").addEventListener("click", () => showStep(3));
+
+            document.getElementById("validateBasicRequirements").addEventListener("click", function () {
+                const jsonText = document.getElementById("basicRequirementsResponse").value;
+                const validationDiv = document.getElementById("basicRequirementsValidation");
+                if (isValidJSON(jsonText)) {
+                    try {
+                        if (Array.isArray(JSON.parse(jsonText))) {
+                            validationDiv.textContent = formatJSON(jsonText);
+                            validationDiv.style.color = "green";
+                        } else {
+                            validationDiv.textContent = "JSON معتبر است اما باید یک آرایه از نیازمندی‌ها باشد.";
+                            validationDiv.style.color = "orange";
+                        }
+                    } catch (e) {
+                        validationDiv.textContent = "خطا در پارس کردن JSON: " + e.message;
+                        validationDiv.style.color = "red";
+                    }
+                } else {
+                    validationDiv.textContent = "متن وارد شده یک JSON معتبر نیست.";
+                    validationDiv.style.color = "red";
+                }
+                validationDiv.style.display = "block";
+            });
+
+            document.getElementById("processRoleRequirements").addEventListener("click", function () {
+                const jsonText = document.getElementById("basicRequirementsResponse").value;
+                if (isValidJSON(jsonText)) {
+                    try {
+                        const requirementsArray = JSON.parse(jsonText);
+                        if (Array.isArray(requirementsArray)) {
+                            projectJson.userRoles[currentRoleIndex].requirements = requirementsArray;
+                            currentRoleIndex++;
+                            setupStep4ForRole(currentRoleIndex);
+                        } else { alert("JSON باید یک آرایه از نیازمندی‌ها باشد."); }
+                    } catch (e) { alert("خطا در پارس کردن JSON: " + e.message); }
+                } else { alert("لطفاً یک JSON معتبر از نیازمندی‌های این نقش وارد کنید."); }
+            });
+
+            document.getElementById("backToStep4").addEventListener("click", () => showStep(4));
+
+            document.getElementById("validateEntities").addEventListener("click", function () {
+                const jsonText = document.getElementById("entitiesResponse").value;
+                const validationDiv = document.getElementById("entitiesValidation");
+                if (isValidJSON(jsonText)) {
+                    try {
+                        if (Array.isArray(JSON.parse(jsonText))) {
+                            validationDiv.textContent = formatJSON(jsonText);
+                            validationDiv.style.color = "green";
+                        } else {
+                            validationDiv.textContent = "JSON معتبر است اما باید یک آرایه باشد.";
+                            validationDiv.style.color = "orange";
+                        }
+                    } catch (e) {
+                        validationDiv.textContent = "خطا در پارس کردن JSON: " + e.message;
+                        validationDiv.style.color = "red";
+                    }
+                } else {
+                    validationDiv.textContent = "متن وارد شده یک JSON معتبر نیست.";
+                    validationDiv.style.color = "red";
+                }
+                validationDiv.style.display = "block";
+            });
+
+            // UPDATED LOGIC FOR #nextToStep6 BUTTON
+            document.getElementById("nextToStep6").addEventListener("click", function () {
+                const jsonText = document.getElementById("entitiesResponse").value;
+                if (isValidJSON(jsonText)) {
+                    try {
+                        const jsonObj = JSON.parse(jsonText);
+                        if (Array.isArray(jsonObj)) {
+                            projectJson.entities = jsonObj;
+                            currentRoleIndexForStep6 = 0; // Reset index for the new loop
+                            setupStep6ForRole(currentRoleIndexForStep6); // Start the step 6 loop
+                            showStep(6);
+                        } else { alert("JSON باید یک آرایه باشد."); }
+                    } catch (e) { alert("خطا در پارس کردن JSON: " + e.message); }
+                } else { alert("لطفاً یک JSON معتبر وارد کنید."); }
+            });
+
+            document.getElementById("backToStep5").addEventListener("click", () => showStep(5));
+
+            document.getElementById("validateCompleteRequirements").addEventListener("click", function () {
+                const jsonText = document.getElementById("completeRequirementsResponse").value;
+                const validationDiv = document.getElementById("completeRequirementsValidation");
+                if (isValidJSON(jsonText)) {
+                    try {
+                        if (Array.isArray(JSON.parse(jsonText))) {
+                            validationDiv.textContent = formatJSON(jsonText);
+                            validationDiv.style.color = "green";
+                        } else {
+                            validationDiv.textContent = "JSON معتبر است اما باید یک آرایه باشد.";
+                            validationDiv.style.color = "orange";
+                        }
+                    } catch (e) {
+                        validationDiv.textContent = "خطا در پارس کردن JSON: " + e.message;
+                        validationDiv.style.color = "red";
+                    }
+                } else {
+                    validationDiv.textContent = "متن وارد شده یک JSON معتبر نیست.";
+                    validationDiv.style.color = "red";
+                }
+                validationDiv.style.display = "block";
+            });
+
+            // NEW EVENT LISTENER FOR THE #processTechnicalDetails BUTTON IN STEP 6
+            document.getElementById("processTechnicalDetails").addEventListener("click", function () {
+                const jsonText = document.getElementById("completeRequirementsResponse").value;
+                if (isValidJSON(jsonText)) {
+                    try {
+                        const completedRequirements = JSON.parse(jsonText);
+                        if (Array.isArray(completedRequirements)) {
+                            projectJson.userRoles[currentRoleIndexForStep6].requirements = completedRequirements;
+                            currentRoleIndexForStep6++;
+                            setupStep6ForRole(currentRoleIndexForStep6); // Move to the next role or finish
+                        } else { alert("پاسخ JSON باید یک آرایه از نیازمندی‌ها باشد."); }
+                    } catch (e) { alert("خطا در پارس کردن JSON: " + e.message); }
+                } else { alert("لطفاً یک JSON معتبر از نیازمندی‌های تکمیل شده وارد کنید."); }
+            });
+
+            document.getElementById("backToStep6").addEventListener("click", () => showStep(6));
+
+            document.getElementById("copyFinalJson").addEventListener("click", function () {
+                const jsonText = document.getElementById("finalJsonOutput").textContent;
+                navigator.clipboard.writeText(jsonText).then(() => showToast("JSON با موفقیت در کلیپبورد کپی شد!"));
+            });
+
+            document.getElementById("prettifyJson").addEventListener("click", function () {
+                const jsonText = document.getElementById("finalJsonOutput").textContent;
+                try {
+                    document.getElementById("finalJsonOutput").textContent = JSON.stringify(JSON.parse(jsonText), null, 2);
+                    showToast("JSON با موفقیت زیباسازی شد!");
+                } catch (e) { alert("خطا در پارس کردن JSON: " + e.message); }
+            });
+
+            document.getElementById("downloadFinalJson").addEventListener("click", function () {
+                const jsonText = document.getElementById("finalJsonOutput").textContent;
+                const fileName = (projectJson.projectInfo.name || "project").replace(/\s+/g, "_").toLowerCase() + "_documentation.json";
+                const blob = new Blob([jsonText], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = fileName;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+                showToast("فایل JSON با موفقیت دانلود شد!");
+            });
+
+            document.getElementById("startOver").addEventListener("click", function () {
+                if (confirm("آیا مطمئن هستید که می‌خواهید از ابتدا شروع کنید؟ تمام اطلاعات وارد شده از بین خواهد رفت.")) {
+                    projectJson = {};
+                    document.getElementById("projectInfoForm").reset();
+                    const textareas = ["projectInfoResponse", "userRolesResponse", "basicRequirementsResponse", "entitiesResponse", "completeRequirementsResponse"];
+                    textareas.forEach(id => document.getElementById(id).value = "");
+                    const validations = ["projectInfoValidation", "userRolesValidation", "basicRequirementsValidation", "entitiesValidation", "completeRequirementsValidation"];
+                    validations.forEach(id => document.getElementById(id).style.display = "none");
+                    showStep(1);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
